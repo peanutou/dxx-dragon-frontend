@@ -1,4 +1,3 @@
-// src/router/index.ts
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
@@ -7,6 +6,9 @@ import Dashboard from '@/views/dashboard/Dashboard.vue'
 import UserList from '@/views/users/UserList.vue'
 import RoleList from '@/views/roles/RoleList.vue'
 import TenantList from '@/views/tenants/TenantList.vue'
+import FlowList from '@/views/flows/FlowList.vue'
+import FlowCreate from '@/views/flows/FlowCreate.vue'
+import FlowEditor from '@/views/flows/FlowEditor.vue'
 
 const routes: RouteRecordRaw[] = [
     {
@@ -41,6 +43,21 @@ const routes: RouteRecordRaw[] = [
                 path: 'roles',
                 name: 'RoleList',
                 component: RoleList
+            },
+            {
+                path: 'flows',
+                name: 'FlowList', 
+                component: FlowList
+            },
+            {
+                path: 'flows/create',
+                name: 'FlowCreate',
+                component: FlowCreate
+            },
+            {
+                path: 'flows/:id/edit',
+                name: 'FlowEditor',
+                component: FlowEditor
             }
         ],
         meta: { requiresAuth: true }

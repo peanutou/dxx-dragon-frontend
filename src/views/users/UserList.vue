@@ -31,16 +31,6 @@ const columns = [
           h(NTag, { type: 'info', style: 'margin-right: 4px' }, { default: () => role })
         )
       : '-'
-  },
-  {
-    title: '存储路径',
-    key: 'storage_root',
-    render: (row: any) =>
-      h(
-        'a',
-        { href: row.storage_root, target: '_blank', style: 'color: #409EFF' },
-        'PATH'
-      )
   }
 ]
 

@@ -77,7 +77,6 @@ interface Tenant {
     plan: string
     is_active: boolean
     created_at: string
-    storage_root: string
 }
 
 const tenants = ref<Tenant[]>([])
@@ -111,11 +110,6 @@ const columns: DataTableColumns<Tenant> = [
     },
     { title: 'Slug', key: 'slug', sorter: true },
     { title: '套餐', key: 'plan', sorter: true },
-    {
-        title: '存储路径',
-        key: 'storage_root',
-        sorter: true
-    },
     {
         title: '状态',
         key: 'is_active',
