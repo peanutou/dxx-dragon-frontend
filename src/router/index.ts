@@ -7,8 +7,8 @@ import UserList from '@/views/users/UserList.vue'
 import RoleList from '@/views/roles/RoleList.vue'
 import TenantList from '@/views/tenants/TenantList.vue'
 import FlowList from '@/views/flows/FlowList.vue'
-import FlowCreate from '@/views/flows/FlowCreate.vue'
 import FlowEditor from '@/views/flows/FlowEditor.vue'
+import FlowRunner from '@/views/flows/FlowRunner.vue'
 
 const routes: RouteRecordRaw[] = [
     {
@@ -50,14 +50,26 @@ const routes: RouteRecordRaw[] = [
                 component: FlowList
             },
             {
-                path: 'flows/create',
-                name: 'FlowCreate',
-                component: FlowCreate
-            },
-            {
                 path: 'flows/:id/edit',
                 name: 'FlowEditor',
-                component: FlowEditor
+                component: FlowEditor,
+                meta: {
+                    fullscreen: true,
+                    showBackButton: true,
+                    backButtonText: '← 返回流程列表',
+                    backButtonTarget: '/flows'
+                }
+            },
+            {
+                path: 'flows/:id/run',
+                name: 'FlowRunner',
+                component: FlowRunner,
+                meta: {
+                    fullscreen: true,
+                    showBackButton: true,
+                    backButtonText: '← 返回流程列表',
+                    backButtonTarget: '/flows'
+                }
             }
         ],
         meta: { requiresAuth: true }

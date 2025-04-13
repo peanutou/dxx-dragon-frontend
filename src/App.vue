@@ -11,7 +11,7 @@ import {
 
 <template>
     <n-config-provider>
-        <n-message-provider>
+        <n-message-provider placement="top-right" :max="3">
             <n-dialog-provider>
                 <n-notification-provider>
                     <n-loading-bar-provider>
@@ -25,5 +25,8 @@ import {
 </template>
 
 <style scoped>
-/* 可选全局样式 */
+html, body, #app {
+  height: 100%;
+  margin: 0;
+}
 </style>

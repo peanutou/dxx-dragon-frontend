@@ -1,0 +1,106 @@
+<template>
+    <n-input ref="inputRef" v-model:value="modelValue" v-bind="$attrs" @keydown="handleKeydown" @keyup="handleKeyup" />
+    <div v-if="suggestionState.show" class="suggestion-popup"
+        style="position: absolute; background: white; border: 1px solid #ccc; padding: 4px; z-index: 10;">
+        <div v-for="(s, i) in suggestionState.suggestions" :key="s" class="suggestion-item" :style="{
+            padding: '2px 4px',
+            cursor: 'pointer',
+            background: suggestionState.activeIndex === i ? '#eef' : 'white'
+        }" @mousedown.prevent="selectSuggestion(s)">
+            {{ s }}
+        </div>
+    </div>
+</template>
+
+<script setup lang="ts">
+import { NInput } from 'naive-ui'
+import { ref, reactive, watch } from 'vue'
+import { useFlowStore } from '@/store/flow'
+
+const modelValue = defineModel<string>()
+const inputRef = ref<InstanceType<typeof NInput> | null>(null)
+
+const suggestionState = reactive({
+    show: false,
+    suggestions: [] as string[],
+    cursor: 0,
+    activeIndex: 0
+})
+
+const flowStore = useFlowStore()
+watch(
+    () => flowStore.getFlowState(),
+    (flow) => {
+        // console.log('🎯 Flow changed:', flow)
+        const inputs = flow.inputs?.map(i => `inputs.${i.name}`) ?? []
+        const variables = flow.variables ? Object.keys(flow.variables).map(k => `${k}`) : []
+        const nodes = flow.nodes?.map(n => `${n.data.name}`) ?? []
+        suggestionState.suggestions = [...inputs, ...variables, ...nodes]
+    },
+    { immediate: true, deep: true }
+)
+
+function getInputElement() {
+    const inputType = inputRef.value?.type
+    if (!inputType) {
+        console.warn('❌ Input type not found')
+        return null
+    }
+    if (inputType === 'textarea') {
+        return inputRef.value.$el.querySelector('textarea') as HTMLTextAreaElement | null
+    } else if (inputType === 'input') {
+        return inputRef.value.$el.querySelector('input') as HTMLInputElement | null
+    }
+    console.warn('❌ Unsupported input type:', inputType)
+    return null
+}
+
+function selectSuggestion(suggestion: string) {
+    const input = getInputElement()
+    if (!input) return
+    const cursor = input.selectionStart ?? 0
+    const text = modelValue.value
+    const insertion = suggestion + '}}'
+    modelValue.value = text.slice(0, cursor - 1) + insertion + text.slice(cursor)
+    suggestionState.show = false
+}
+
+function handleKeyup(e: KeyboardEvent) {
+    if (e.key === '{') {
+        const input = getInputElement()
+        if (!input) return
+        const cursor = input.selectionStart ?? 0
+        const text = modelValue.value.slice(0, cursor)
+        // console.log(cursor, modelValue.value, text)
+        if (text.endsWith('{{')) {
+            // console.log('🎯 Trigger suggestions at:', cursor)
+            suggestionState.show = true
+            suggestionState.cursor = cursor
+        }
+    } else if (e.key === 'Escape') {
+        suggestionState.show = false
+    } else if (e.key === 'ArrowDown') {
+        if (suggestionState.show) {
+            suggestionState.activeIndex = (suggestionState.activeIndex + 1) % suggestionState.suggestions.length
+            e.preventDefault()
+            e.stopPropagation()
+        }
+    } else if (e.key === 'ArrowUp') {
+        if (suggestionState.show) {
+            suggestionState.activeIndex = (suggestionState.activeIndex - 1 + suggestionState.suggestions.length) % suggestionState.suggestions.length
+            e.preventDefault()
+            e.stopPropagation()
+        }
+    } else if (e.key === 'Enter' && suggestionState.show) {
+        selectSuggestion(suggestionState.suggestions[suggestionState.activeIndex])
+        e.preventDefault()
+    }
+}
+
+function handleKeydown(e: KeyboardEvent) {
+    if (suggestionState.show && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
+}
+</script>
