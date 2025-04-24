@@ -1,0 +1,31 @@
+.node-container {
+    width: 120px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.node-selected {
+    border: 2px solid #409EFF !important;
+    border-radius: 4px;
+    box-shadow: 0 0 4px #409EFF;
+}
+
+.flash-border {
+    animation: flash-outline 0.3s ease-in-out 2;
+}
+
+@keyframes flash-outline {
+
+    0%,
+    100% {
+        outline: 2px solid #f87171;
+        outline-offset: 0px;
+    }
+
+    50% {
+        outline: 4px solid #facc15;
+        outline-offset: 2px;
+    }
+}

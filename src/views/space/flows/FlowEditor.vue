@@ -17,7 +17,7 @@
                     <n-tab-pane name="canvas" tab="流程画布">
                         <div style="height: 100%;">
                             <VueFlow ref="vueFlowRef" class="h-full" v-model:nodes="nodes" v-model:edges="edges"
-                                :node-types="nodeTypesMap" :connection-mode="'loose'" :pan-on-drag="false"
+                                :node-types="nodeTypesMap" :connection-mode="ConnectionMode.Loose" :pan-on-drag="true"
                                 :default-edge-options="{
                                     type: 'default',
                                     markerEnd: 'arrowclosed'
@@ -67,11 +67,13 @@
 </template>
 
 <script setup lang="ts">
+import { ROUTE } from '@/constants/routes'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
+import type { NodeChange, EdgeChange } from '@vue-flow/core';
 import { ref, computed, onMounted, markRaw, h, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { VueFlow } from '@vue-flow/core'
+import { VueFlow, ConnectionMode } from '@vue-flow/core'
 import { useNavbarStore } from '@/store/navbar'
 import { useFlowStore } from '@/store/flow'
 import { NButton, NTag } from 'naive-ui'
@@ -110,21 +112,48 @@ function resolveRef(ref: string, definitions: Record<string, any>): any {
 }
 
 const router = useRouter()
-const nodes = ref([])
-const edges = ref([])
+const nodes = ref<Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, any> }>>([])
+const edges = ref<Array<{ id: string; source: string; target: string }>>([])
 const nodeTypes = ['Prompt', 'HTTP', 'Regex', 'Aggregator']
-const selectedNode = ref(null)
+const selectedNode = ref<Record<string, any> | undefined>(undefined)
 const showPropertyPanel = ref(true)
 const route = useRoute()
-const flowInputs = ref([])
+const flowInputs = ref<any[]>([])
 const flowVariables = ref({})
-const flowMeta = ref({})
-const vueFlowRef = ref(null)
+const flowMeta = ref<{
+    name?: string;
+    description?: string;
+    version?: string;
+    status?: string;
+    created_at?: string;
+    frontend: {
+        viewport: { x: number; y: number; zoom: number };
+    };
+}>({
+    frontend: {
+        viewport: { x: 0, y: 0, zoom: 1 }
+    }
+})
+// removed invalid import of VueFlowInstance; will use InstanceType<typeof VueFlow> instead
+
+const vueFlowRef = ref<InstanceType<typeof VueFlow> | null>(null);
 const navbarStore = useNavbarStore()
 const activeTab = ref('canvas')
 
-const undoStack = ref([])
-const redoStack = ref([])
+const undoStack = ref<Array<{
+    nodes: any[];
+    edges: any[];
+    inputs: any[];
+    variables: Record<string, any>;
+    meta: Record<string, any>;
+}>>([])
+const redoStack = ref<Array<{
+    nodes: any[];
+    edges: any[];
+    inputs: any[];
+    variables: Record<string, any>;
+    meta: Record<string, any>;
+}>>([])
 const hasChanges = ref(false)
 let dragging = false
 let dragOffset = { x: 0, y: 0 }
@@ -171,7 +200,7 @@ function snapshot() {
     redoStack.value = []
 }
 
-function onViewportChange({ x, y, zoom }) {
+function onViewportChange({ x, y, zoom }: { x: number; y: number; zoom: number }) {
     // 在这里可以保存视口状态到 flowMeta
     // 不支持撤销，仅在保存时进行存储
     flowMeta.value.frontend = {
@@ -180,7 +209,8 @@ function onViewportChange({ x, y, zoom }) {
     }
 }
 
-function onNodesChange(changes) {
+
+function onNodesChange(changes: NodeChange[]) {
     const hasRemoval = changes.some(change => change.type === 'remove')
     const hasPositionChange = changes.some(change => change.type === 'position')
 
@@ -202,11 +232,11 @@ function onNodesChange(changes) {
         if (snapshotTimeout) clearTimeout(snapshotTimeout)
         pendingEdgeSnapshot = false
         snapshot()
-        selectedNode.value = null
+        selectedNode.value = undefined
     }
 }
 
-function onEdgesChange(changes) {
+function onEdgesChange(changes: EdgeChange[]) {
     const hasRemoval = changes.some(change => change.type === 'remove')
     if (hasRemoval) {
         // 查找所有目标节点
@@ -233,7 +263,7 @@ function onEdgesChange(changes) {
     }
 }
 
-function handleNodeUpdate(updatedData) {
+function handleNodeUpdate(updatedData: Record<string, any>) {
 
     if (!selectedNode.value) return
 
@@ -277,7 +307,7 @@ async function handleSave() {
         }
     })
     // 校验 edges 中 source 和 target 节点之间的依赖关系
-    edges.value.forEach(edge => {
+    edges.value.forEach((edge: { source: string; target: string }) => {
         const sourceNode = nodes.value.find(n => n.id === edge.source)
         const targetNode = nodes.value.find(n => n.id === edge.target)
 
@@ -303,7 +333,7 @@ async function handleSave() {
         return
     }
     try {
-        const res = await request.put(`/flows/${flowId}/config`, {
+        const res = await request.put(ROUTE.SPACE.FLOWS.CONFIG(flowId), {
             config: {
                 nodes: nodes.value.map(n => ({
                     ...n.data,
@@ -343,18 +373,29 @@ function undo() {
     redoStack.value.push(currentState)
     // 从撤销栈中获取上一个状态
     const last = undoStack.value.pop()
-    nodes.value = last.nodes
-    edges.value = last.edges
-    flowInputs.value = last.inputs
-    flowVariables.value = last.variables
-    flowMeta.value = last.meta
+    if (last) {
+        nodes.value = last.nodes
+    }
+    edges.value = (last?.edges ?? []) as Array<{ id: string; source: string; target: string }>
+    if (last) {
+        flowInputs.value = last.inputs
+    }
+    if (last) {
+        flowVariables.value = last.variables
+    }
+    flowMeta.value = {
+        ...(last?.meta ?? {}),
+        frontend: (last?.meta?.frontend ?? { viewport: { x: 0, y: 0, zoom: 1 } })
+    }
     // 更新视口
-    const viewport = last.meta?.frontend?.viewport
+    const viewport = last?.meta?.frontend?.viewport ?? { x: 0, y: 0, zoom: 1 }
     if (viewport) {
         vueFlowRef.value?.setViewport?.(viewport)
     }
     // 更新当前状态
-    useFlowStore().setFlowState(last)
+    if (last) {
+        useFlowStore().setFlowState(last)
+    }
     // 更新撤销栈
     if (undoStack.value.length === 0 && !undoLimitExceeded) {
         hasChanges.value = false
@@ -368,11 +409,15 @@ function redo() {
     undoStack.value.push(currentState)
     // 从重做栈中获取下一个状态
     const next = redoStack.value.pop()
+    if (!next) return
     nodes.value = next.nodes
     edges.value = next.edges
     flowInputs.value = next.inputs
     flowVariables.value = next.variables
-    flowMeta.value = next.meta
+    flowMeta.value = {
+        ...next.meta,
+        frontend: next.meta.frontend || { viewport: { x: 0, y: 0, zoom: 1 } }
+    }
     // 更新视口
     const viewport = next.meta?.frontend?.viewport
     if (viewport) {
@@ -388,18 +433,27 @@ onMounted(async () => {
     const flowId = route.params.id as string
     if (flowId) {
         try {
-            const res = await request.get(`/flows/${flowId}`)
+            const res = await request.get(ROUTE.SPACE.FLOWS.DETAIL(flowId))
             if (res?.data?.data?.config) {
                 // nodes
-                nodes.value = (res.data.data.config.nodes || []).map((n) => {
-                    const type = n.type.charAt(0).toUpperCase() + n.type.slice(1)
-                    return {
-                        id: `${type}-${generateShortId()}`,
-                        type,
-                        position: n.frontend?.position || { x: 0, y: 0 },
-                        data: n
-                    }
-                })
+                nodes.value = (res.data.data.config.nodes || []).map(
+                    (
+                        n: {
+                            type: string;
+                            frontend?: {
+                                position?: { x: number; y: number }
+                            };
+                            [key: string]: any
+                        }
+                    ) => {
+                        const type = n.type.charAt(0).toUpperCase() + n.type.slice(1)
+                        return {
+                            id: `${type}-${generateShortId()}`,
+                            type,
+                            position: n.frontend?.position || { x: 0, y: 0 },
+                            data: n
+                        }
+                    })
                 // node types
                 const nodeMap = new Map(nodes.value.map(n => [n.data.name, n.id]))
                 // edges
@@ -504,7 +558,7 @@ onMounted(async () => {
             }),
         () =>
             h(NTag, {
-                type: 'label',
+                type: 'default',
                 size: 'small',
                 onClick: () => console.log(undoStack.value.length),
                 style: ''
@@ -513,13 +567,17 @@ onMounted(async () => {
     ])
 })
 
+onUnmounted(async () => {
+    navbarStore.clearActions()
+})
+
 async function publishFlow() {
     const flowId = route.params.id as string
     try {
         if (hasChanges.value) {
             await handleSave()
         }
-        const res = await request.post(`/flows/${flowId}/publish`)
+        const res = await request.post(ROUTE.SPACE.FLOWS.PUBLISH(flowId))
         if (res?.data?.success) {
             window.$message?.success('发布成功')
             flowMeta.value.status = 'published'
@@ -544,7 +602,7 @@ function getCanvasDropPosition(event: DragEvent) {
     }
 }
 
-function createMarker(x, y, color) {
+function createMarker(x: number, y: number, color: string) {
     const marker = document.createElement('div')
     marker.id = 'marker123'
     marker.style.position = 'absolute'
@@ -578,7 +636,7 @@ async function onDrop(event: DragEvent) {
 
     const position = getCanvasDropPosition(event)
     const uniqueName = `${type.toLowerCase()}_${generateShortId()}`
-    let defaultNodeData = { label: `${type} 节点`, name: uniqueName, type: type.toLowerCase() }
+    let defaultNodeData: Record<string, any> = { label: `${type} 节点`, name: uniqueName, type: type.toLowerCase() }
 
     function generateDefaultValue(schema: any, definitions: Record<string, any>): any {
 
@@ -614,7 +672,7 @@ async function onDrop(event: DragEvent) {
     }
 
     try {
-        const res = await request.get('/flows/node-types')
+        const res = await request.get(ROUTE.SPACE.FLOWS.NODE_TYPES)
         const schema = res?.data?.data?.[type.toLowerCase()]
         // console.log('节点类型:', type, schema)
         if (schema?.properties) {
@@ -639,7 +697,7 @@ async function onDrop(event: DragEvent) {
     snapshot()
 }
 
-function onConnect(params) {
+function onConnect(params: { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }) {
     const sourceNode = nodes.value.find((n) => n.id === params.source)
     const targetNode = nodes.value.find((n) => n.id === params.target)
     if (!sourceNode?.data?.name || !targetNode?.data?.name) {
@@ -668,7 +726,7 @@ function resetViewport() {
     vueFlowRef.value?.setViewport?.({ x: 0, y: 0, zoom: 1 })
 }
 
-function onNodeClick(event) {
+function onNodeClick(event: { node: Record<string, any> }) {
     selectedNode.value = event.node
     showPropertyPanel.value = true
 }
