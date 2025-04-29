@@ -24,13 +24,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useMessage } from 'naive-ui'
 import axios from '@/utils/axios'
 import { useUserStore } from '@/store/user'
 import { ROUTE } from '@/constants/routes'
 
 const router = useRouter()
-const message = useMessage()
 const formRef = ref(null)
 const loading = ref(false)
 
@@ -55,12 +53,11 @@ const handleLogin = async () => {
         if (res.status !== 200) {
             throw new Error(res.data.message)
         }
-        console.log('Login response:', res.data.data)
         useUserStore().setUser(res.data.data)
-        message.success('登录成功')
+        window.$message.success('登录成功')
         router.push(ROUTE.SPACE.DASHBOARD)
     } catch (err) {
-        message.error('登录失败，请检查用户名或密码')
+        window.$message.error('登录失败，请检查用户名或密码')
     } finally {
         loading.value = false
     }

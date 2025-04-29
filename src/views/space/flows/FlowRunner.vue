@@ -128,7 +128,7 @@ async function handleRun() {
           : ROUTE.SPACE.FLOWS.RUN(flowId) // Updated URL
         const res = await request.post(endpoint, parsedInput)
         output.value = res.data?.data
-        message.success('运行成功')
+        message.succeed('运行成功')
     } catch (err) {
         message.error('运行失败')
         console.error(err)
@@ -139,7 +139,7 @@ async function handleRun() {
 
 function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text).then(() => {
-        message.success('已复制流程 ID')
+        message.succeed('已复制流程 ID')
     }).catch(() => {
         message.error('复制失败')
     })

@@ -322,11 +322,15 @@ async function handleSave() {
             }
         }
     })
-    const confirmed = await window.$dialog?.warning({
-        title: '校验完成',
-        content: '已完成流程依赖校验，是否继续保存？',
-        positiveText: '确认保存',
-        negativeText: '取消'
+    const confirmed = await new Promise((resolve) => {
+        window.$dialog?.warning({
+            title: '校验完成',
+            content: '已完成流程依赖校验，是否继续保存？',
+            positiveText: '确认保存',
+            negativeText: '取消',
+            onPositiveClick: () => resolve(true),
+            onNegativeClick: () => resolve(false)
+        })
     })
 
     if (!confirmed) {

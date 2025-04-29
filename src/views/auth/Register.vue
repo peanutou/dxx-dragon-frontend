@@ -69,7 +69,7 @@ function handleRegister() {
                     password: form.value.password,
                     confirm_password: form.value.confirmPassword
                 })
-                window.$message.success('注册成功')
+                window.$message.succeed('注册成功')
                 router.push('/login')
             } catch (err: any) {
                 const detail = err.response?.data?.message || '注册失败，请重试'

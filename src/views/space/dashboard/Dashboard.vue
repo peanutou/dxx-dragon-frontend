@@ -10,15 +10,13 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
-import { useMessage } from 'naive-ui'
 
 const router = useRouter()
 const userStore = useUserStore()
-const message = useMessage()
 
 const logout = () => {
     userStore.logout()
-    message.success('已退出登录')
+    window.$message.success('已退出登录')
     router.push('/login')
 }
 </script>
