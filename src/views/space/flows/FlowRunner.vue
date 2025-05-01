@@ -22,23 +22,26 @@
                         <div class="leading-relaxed">
                             {{ flowDefinition.description }}
                         </div>
-
-                        <n-form :model="form" label-width="80" class="tight-form">
-                            <n-form-item v-for="field in flowDefinition?.config?.inputs || []" :key="field.name"
-                                :label="field.label || field.name" :path="field.name">
-                                <n-input v-if="field.type === 'string'" v-model:value="inputValues[field.name]"
-                                    :placeholder="`请输入 ${field.label || field.name}`" />
-                                <n-input-number v-else-if="field.type === 'number'"
-                                    v-model:value="inputValues[field.name]" :placeholder="`请输入数字`" />
-                                <n-select v-else-if="field.type === 'select'" v-model:value="inputValues[field.name]"
-                                    :options="(field.options || []).map((o: string) => ({ label: o, value: o }))"
-                                    :placeholder="`请选择`" />
+                        <!-- Run Histroy Items -->
+                        <n-form :model="{ inputValues }" label-width="80" class="space-y-0">
+                            <n-form-item label="运行历史">
+                                <n-select v-if="flowDefinition.run_inputs_history" v-model:value="selectedRunId"
+                                    :options="flowDefinition.run_inputs_history.map((item: any, index: number) => ({
+                                        label: `#${index + 1} ｜${new Date(item.run_at).toLocaleString()}`,
+                                        value: item.run_id
+                                    }))" placeholder="选择一次历史运行" style="width: 100%;">
+                                </n-select>
                             </n-form-item>
-
+                            <!-- Seperator -->
+                            <n-divider title-placement="center"
+                                style="margin-top: 0px; font-size: 12px;">输入数据</n-divider>
+                            <FlowInputs v-if="flowDefinition" :inputs="flowDefinition?.config?.inputs || []"
+                                v-model:inputValues="inputValues" />
                             <n-form-item class="flex flex-col items-start space-y-2">
                                 <n-button type="primary" @click="handleRun" :loading="loading">运行</n-button>
                             </n-form-item>
                         </n-form>
+
                         <!-- execute result: outputs.trace -->
                         <div v-if="output?.outputs?.trace" class="text-xs text-gray-500 mt-2">
                             ⏱️ 执行耗时: {{ output.outputs.trace.duration.toFixed(2) }} 秒
@@ -80,35 +83,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useMessage, NForm, NFormItem, NInput, NButton, NCard, NTag, NInputNumber, NSelect, NThing, NTooltip } from 'naive-ui'
+import { NCard, NTag, NButton, NTooltip, NDivider } from 'naive-ui'
 import request from '@/utils/axios'
 import VueJsonPretty from 'vue-json-pretty'
 import 'vue-json-pretty/lib/styles.css'
-import { ROUTE } from '@/constants/routes' // Import ROUTE
+import { TenantSpaceAPI } from '@/apis/endpoints'
+import FlowInputs from '@/components/flows/FlowInputs.vue'
+
 
 const route = useRoute()
 const flowId = route.params.id as string
-
 const inputValues = ref<Record<string, any>>({})
 const loading = ref(false)
 const output = ref<any>(null)
 const flowDefinition = ref<any>(null)
-const message = useMessage()
-
-const form = { inputValues }
+const selectedRunId = ref('')
 
 const props = defineProps<{ debugMode?: boolean }>()
 const debugMode = props.debugMode ?? false
 
 async function fetchFlow() {
     try {
-        const res = await request.get(ROUTE.SPACE.FLOWS.DETAIL(flowId)) // Updated URL
+        const res = await request.get(TenantSpaceAPI.flows.get(flowId))
         flowDefinition.value = res.data?.data
-        // output.value = flowDefinition.value
+        // 填充 inputValues 的初始值，boolean 类型为 false，其它为 null
+        if (flowDefinition.value?.config?.inputs) {
+            flowDefinition.value.config.inputs.forEach((field: any) => {
+                if (!(field.name in inputValues.value)) {
+                    inputValues.value[field.name] = field.type === 'boolean' ? false : null;
+                }
+            });
+        }
+        selectedRunId.value = flowDefinition.value.run_inputs_history?.[0]?.run_id || ''
     } catch (err) {
-        message.error('获取流程信息失败')
+        window.$message.error('获取流程信息失败')
     }
 }
 
@@ -124,26 +134,38 @@ async function handleRun() {
 
     try {
         const endpoint = debugMode
-          ? ROUTE.SPACE.FLOWS.RUN_DEBUG(flowId) // Updated URL
-          : ROUTE.SPACE.FLOWS.RUN(flowId) // Updated URL
+            ? TenantSpaceAPI.flows.runDebug(flowId)
+            : TenantSpaceAPI.flows.run(flowId)
         const res = await request.post(endpoint, parsedInput)
         output.value = res.data?.data
-        message.succeed('运行成功')
+        window.$message.success('运行成功')
     } catch (err) {
-        message.error('运行失败')
+        window.$message.error('运行失败')
         console.error(err)
     } finally {
         loading.value = false
+        fetchFlow()
     }
 }
 
 function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text).then(() => {
-        message.succeed('已复制流程 ID')
+        window.$message.success('已复制流程 ID')
     }).catch(() => {
-        message.error('复制失败')
+        window.$message.error('复制失败')
     })
 }
+
+// 监听 selectedRunId 变化，自动填充 inputValues
+watch(selectedRunId, (runId) => {
+    if (!runId || !flowDefinition.value?.run_inputs_history) return
+    const selectedRun = flowDefinition.value.run_inputs_history.find((item: any) => item.run_id === runId)
+    if (selectedRun?.inputs) {
+        Object.entries(selectedRun.inputs).forEach(([key, value]) => {
+            inputValues.value[key] = value
+        })
+    }
+})
 </script>
 
 <style scoped>

@@ -11,7 +11,9 @@
                 <n-select v-model:value="input.type" :options="[
                     { label: 'string', value: 'string' },
                     { label: 'number', value: 'number' },
-                    { label: 'boolean', value: 'boolean' }
+                    { label: 'boolean', value: 'boolean' },
+                    { label: 'select', value: 'select' },
+                    { label: 'file', value: 'file' }
                 ]" />
             </n-form-item>
             <n-form-item label="标签" label-placement="left" label-width="80px"
@@ -21,6 +23,16 @@
             </n-form-item>
             <n-form-item label="必填" label-placement="left" label-width="80px">
                 <n-switch v-model:value="input.required" />
+            </n-form-item>
+            <n-form-item v-if="input.type === 'select'" label="下拉选项" label-placement="left" label-width="80px">
+                <div class="space-y-2 w-full">
+                    <div v-for="(option, optIndex) in input.options" :key="optIndex"
+                        class="flex items-center space-x-2">
+                        <n-input v-model:value="input.options[optIndex]" placeholder="请输入选项内容" class="flex-1" />
+                        <n-button type="error" size="tiny" @click="removeOption(input, optIndex)">删除选项</n-button>
+                    </div>
+                    <n-button size="tiny" @click="addOption(input)">新增选项</n-button>
+                </div>
             </n-form-item>
             <n-button type="error" size="small" @click="removeInput(index)">删除</n-button>
         </div>
@@ -41,7 +53,18 @@ const emit = defineEmits<{
     (e: 'update', value: any[]): void
 }>()
 
-const localInputs = ref(props.inputs ? JSON.parse(JSON.stringify(props.inputs)) : [])
+interface Input {
+    name: string;
+    label: string;
+    type: string;
+    required: boolean;
+    options: string[];
+}
+
+const localInputs = ref<Input[]>(props.inputs ? (props.inputs as Input[]).map(input => ({
+    ...input,
+    options: input.options ?? []
+})) : [])
 
 watch(localInputs, (val) => emit('update', val), { deep: true })
 
@@ -50,12 +73,21 @@ function addInput() {
         name: '',
         label: '',
         type: 'string',
-        required: false
+        required: false,
+        options: []
     })
 }
 
 function removeInput(index: number) {
     localInputs.value.splice(index, 1)
+}
+
+function addOption(input: Input) {
+    input.options.push('')
+}
+
+function removeOption(input: Input, index: number) {
+    input.options.splice(index, 1)
 }
 
 function isValidName(name: string): boolean {

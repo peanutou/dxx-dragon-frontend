@@ -4,10 +4,11 @@
 
 <script setup>
 import { computed } from 'vue'
-import PromptNodeForm from './config-forms/PromptNodeForm.vue'
-import HttpNodeForm from './config-forms/HttpNodeForm.vue'
-import RegexNodeForm from './config-forms/RegexNodeForm.vue'
+import PromptForm from './config-forms/PromptForm.vue'
+import HttpForm from './config-forms/HttpForm.vue'
+import RegexForm from './config-forms/RegexForm.vue'
 import AggregatorForm from './config-forms/AggregatorForm.vue'
+import ExcelForm from './config-forms/ExcelForm.vue'
 
 const props = defineProps({
     node: Object
@@ -18,13 +19,15 @@ const emit = defineEmits(['update'])
 const formComponent = computed(() => {
     switch (props.node?.type) {
         case 'Prompt':
-            return PromptNodeForm
+            return PromptForm
         case 'Http':
-            return HttpNodeForm
+            return HttpForm
         case 'Regex':
-            return RegexNodeForm
+            return RegexForm
         case 'Aggregator':
             return AggregatorForm
+        case 'Excel':
+            return ExcelForm
         default:
             return null
     }

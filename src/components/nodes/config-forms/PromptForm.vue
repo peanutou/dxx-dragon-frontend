@@ -28,13 +28,14 @@
         </n-form-item>
 
         <n-space vertical :size="12">
-            <schema-input v-model:schema="outputsSchema" link-text="输出 Schema (可选)" placeholder="请输入 JSON 示例数据" />
+            <schema-input v-model:schema="localData.outputs_schema" link-text="输出 Schema (可选)" placeholder="请输入 JSON 示例数据" />
             <n-button type="primary" @click="submit">保存配置</n-button>
         </n-space>
 
     </n-form>
     <n-modal v-model:show="showModal" title="编辑 Prompt 模板" preset="dialog" style="width: 80%;">
-        <context-input v-model:modelValue="localData.template" type="textarea" autosize style="min-height: 300px" />
+        <context-input v-model:modelValue="localData.template" type="textarea" autosize
+            style="min-height: 300px" />
         <template #action>
             <n-button type="primary" @click="showModal = false">完成</n-button>
         </template>
@@ -56,17 +57,26 @@ const emit = defineEmits<{
     (e: 'update', data: any): void
 }>()
 
-const localData = ref({ model: 'gpt-4o', temperature: 0, output_json: false, ...props.node.data })
-const outputsSchema = ref(localData.value.outputs_schema || {})
+const defaultPromptData = {
+    name: '',
+    model: 'gpt-4o',
+    temperature: 0,
+    output_json: false,
+    template: '',
+    outputs_schema: {}
+}
+
+const localData = ref({ ...defaultPromptData, ...(props.node.data || {}) })
 const showModal = ref(false)
 
-watch(() => props.node.data, (newData) => {
-    localData.value = { ...newData }
-    outputsSchema.value = newData.outputs_schema || {}
-}, { immediate: true })
+watch(
+    () => props.node.data, (newData) => {
+        // 合并默认结构，避免 undefined 字段
+        localData.value = { ...defaultPromptData, ...(newData || {}) }
+    },
+    { immediate: true })
 
 const submit = () => {
-    localData.value.outputs_schema = outputsSchema.value
     emit('update', localData.value)
 }
 </script>

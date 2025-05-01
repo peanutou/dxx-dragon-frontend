@@ -1,3 +1,5 @@
+import { config } from "process"
+
 export const PlatformTenantAPI = {
     list: '/platform/tenants',
     create: '/platform/tenants',
@@ -38,9 +40,23 @@ export const TenantSpaceAPI = {
     flows: {
         list: '/space/flows',
         create: '/space/flows',
+        nodeTypes: '/space/flows/node-types',
+        get: (id: string) => `/space/flows/${id}`,
         update: (id: string) => `/space/flows/${id}`,
         delete: (id: string) => `/space/flows/${id}`,
         edit: (id: string) => `/space/flows/${id}/edit`,
+        publish: (id: string) => `/space/flows/${id}/publish`,
+        config: (id: string) => `/space/flows/${id}/config`,
         run: (id: string) => `/space/flows/${id}/run`,
+        runDebug: (id: string) => `/space/flows/${id}/run-debug`,
+        testNode: (id: string) => `/space/flows/${id}/test-node`,
+    },
+    files: {
+        upload: '/space/files/upload',
+        getMetadata: (fileId: string) => `/space/files/${fileId}`,
+        delete: (fileId: string) => `/space/files/${fileId}`,
+        list: '/space/files',
+        downloadStream: (fileId: string) => `/space/files/${fileId}/download`,
+        downloadBase64: (fileId: string) => `/space/files/${fileId}/download/base64`,
     },
 }

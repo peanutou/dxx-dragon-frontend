@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { ROUTE } from '@/constants/routes'
+import { TenantSpaceAPI } from '@/apis/endpoints'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import type { NodeChange, EdgeChange } from '@vue-flow/core';
@@ -83,6 +83,7 @@ import PromptNode from '@/components/nodes/custom-nodes/PromptNode.vue'
 import HTTPNode from '@/components/nodes/custom-nodes/HTTPNode.vue'
 import RegexNode from '@/components/nodes/custom-nodes/RegexNode.vue'
 import AggregatorNode from '@/components/nodes/custom-nodes/AggregatorNode.vue'
+import ExcelNode from '@/components/nodes/custom-nodes/ExcelNode.vue';
 import FlowGlobalsEditor from './FlowGlobalsEditor.vue'
 import FlowYAMLViewer from './FlowYAMLViewer.vue'
 import FlowRunner from './FlowRunner.vue'
@@ -104,7 +105,8 @@ const nodeTypesMap = {
     Prompt: markRaw(PromptNode),
     Http: markRaw(HTTPNode),
     Regex: markRaw(RegexNode),
-    Aggregator: markRaw(AggregatorNode)
+    Aggregator: markRaw(AggregatorNode),
+    Excel: markRaw(ExcelNode)
 }
 function resolveRef(ref: string, definitions: Record<string, any>): any {
     const refPath = ref.replace(/^#\/definitions\//, '')
@@ -114,7 +116,7 @@ function resolveRef(ref: string, definitions: Record<string, any>): any {
 const router = useRouter()
 const nodes = ref<Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, any> }>>([])
 const edges = ref<Array<{ id: string; source: string; target: string }>>([])
-const nodeTypes = ['Prompt', 'HTTP', 'Regex', 'Aggregator']
+const nodeTypes = ['Prompt', 'HTTP', 'Regex', 'Aggregator', 'Excel']
 const selectedNode = ref<Record<string, any> | undefined>(undefined)
 const showPropertyPanel = ref(true)
 const route = useRoute()
@@ -208,7 +210,6 @@ function onViewportChange({ x, y, zoom }: { x: number; y: number; zoom: number }
         viewport: { x, y, zoom }
     }
 }
-
 
 function onNodesChange(changes: NodeChange[]) {
     const hasRemoval = changes.some(change => change.type === 'remove')
@@ -337,7 +338,7 @@ async function handleSave() {
         return
     }
     try {
-        const res = await request.put(ROUTE.SPACE.FLOWS.CONFIG(flowId), {
+        const res = await request.put(TenantSpaceAPI.flows.config(flowId), {
             config: {
                 nodes: nodes.value.map(n => ({
                     ...n.data,
@@ -437,7 +438,7 @@ onMounted(async () => {
     const flowId = route.params.id as string
     if (flowId) {
         try {
-            const res = await request.get(ROUTE.SPACE.FLOWS.DETAIL(flowId))
+            const res = await request.get(TenantSpaceAPI.flows.get(flowId))
             if (res?.data?.data?.config) {
                 // nodes
                 nodes.value = (res.data.data.config.nodes || []).map(
@@ -581,7 +582,7 @@ async function publishFlow() {
         if (hasChanges.value) {
             await handleSave()
         }
-        const res = await request.post(ROUTE.SPACE.FLOWS.PUBLISH(flowId))
+        const res = await request.post(TenantSpaceAPI.flows.publish(flowId))
         if (res?.data?.success) {
             window.$message?.success('发布成功')
             flowMeta.value.status = 'published'
@@ -676,7 +677,7 @@ async function onDrop(event: DragEvent) {
     }
 
     try {
-        const res = await request.get(ROUTE.SPACE.FLOWS.NODE_TYPES)
+        const res = await request.get(TenantSpaceAPI.flows.nodeTypes)
         const schema = res?.data?.data?.[type.toLowerCase()]
         // console.log('节点类型:', type, schema)
         if (schema?.properties) {

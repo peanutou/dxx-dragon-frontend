@@ -11,6 +11,8 @@ export function getNodeBgClassByType(nodeType: string): string {
             return 'bg-yellow-50'
         case 'aggregator':
             return 'bg-red-50'
+        case 'excel':
+            return 'bg-purple-50'
         default:
             return 'bg-gray-50'
     }

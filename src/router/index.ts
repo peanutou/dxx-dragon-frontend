@@ -9,7 +9,6 @@ import TenantList from '@/views/platform/tenants/TenantList.vue'
 
 // 租户空间模块
 import Dashboard from '@/views/space/dashboard/Dashboard.vue'
-import UserList from '@/views/space/users/UserList.vue'
 import FlowList from '@/views/space/flows/FlowList.vue'
 import FlowEditor from '@/views/space/flows/FlowEditor.vue'
 import FlowRunner from '@/views/space/flows/FlowRunner.vue'
@@ -42,11 +41,6 @@ const routes: RouteRecordRaw[] = [
                 path: 'space/dashboard',
                 name: 'Dashboard',
                 component: Dashboard
-            },
-            {
-                path: 'space/users',
-                name: 'UserList',
-                component: UserList
             },
             {
                 path: 'space/flows',
