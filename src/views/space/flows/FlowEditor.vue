@@ -3,10 +3,10 @@
         <!-- 左侧节点面板 -->
         <div class="left-panel side-panel">
             <n-card title="节点面板" size="small" class="h-full">
-                <div v-for="type in nodeTypes" :key="type" class="draggable-node" draggable="true"
+                <n-button v-for="type in nodeTypes" :key="type" class="draggable-node" draggable="true" text block
                     @dragstart="onDragStart($event, type)">
                     {{ type }}
-                </div>
+                </n-button>
             </n-card>
         </div>
 
@@ -23,19 +23,11 @@
                                     markerEnd: 'arrowclosed'
                                 }" @drop="onDrop" @dragover="onDragOver" @node-click="onNodeClick"
                                 @nodes-change="onNodesChange" @edges-change="onEdgesChange" @connect="onConnect"
-                                @viewport-change="onViewportChange" />
-                            <div class="reset-viewport-button">
-                                <n-button size="small" @click="resetViewport">重置视口</n-button>
-                            </div>
-                            <div class="zoom-reset-button">
-                                <n-button size="small" @click="resetZoom">100%</n-button>
-                            </div>
+                                @viewport-change="onViewportChange" @node-event="onNodeEvent" />
                         </div>
                     </n-tab-pane>
                     <n-tab-pane name="globals" tab="全局配置" class="overflow-hidden">
-                        <FlowGlobalsEditor :inputs="flowInputs" :variables="flowVariables"
-                            @update:inputs="(val) => { flowInputs = val; snapshot() }"
-                            @update:variables="(val) => { flowVariables = val; snapshot() }" />
+                        <FlowGlobalsEditor v-model:inputs="flowInputs" v-model:variables="flowVariables" />
                     </n-tab-pane>
                 </n-tabs>
             </n-card>
@@ -62,7 +54,7 @@
     </n-modal>
     <n-modal v-model:show="showRunnerModal" preset="card" title="流程测试" style="width: 100vw; height: 100vh;"
         :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
-        <FlowRunner :debugMode="true" />
+        <FlowRunner :test-mode="true" />
     </n-modal>
 </template>
 
@@ -71,12 +63,12 @@ import { TenantSpaceAPI } from '@/apis/endpoints'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import type { NodeChange, EdgeChange } from '@vue-flow/core';
-import { ref, computed, onMounted, markRaw, h, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, onMounted, markRaw, h, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { VueFlow, ConnectionMode } from '@vue-flow/core'
 import { useNavbarStore } from '@/store/navbar'
 import { useFlowStore } from '@/store/flow'
-import { NButton, NTag } from 'naive-ui'
+import { NButton, NTag, NCard } from 'naive-ui'
 import request from '@/utils/axios'
 import NodeConfigPanel from '@/components/nodes/NodeConfigPanel.vue'
 import PromptNode from '@/components/nodes/custom-nodes/PromptNode.vue'
@@ -89,39 +81,62 @@ import FlowYAMLViewer from './FlowYAMLViewer.vue'
 import FlowRunner from './FlowRunner.vue'
 import { generateShortId } from '@/utils/uid'
 
-let pendingEdgeSnapshot = false
-let snapshotTimeout: ReturnType<typeof setTimeout> | null = null
+
+// 声明 flowDefinition
+const flowDefinition = ref<any>(null)
 
 const showYamlModal = ref(false)
 const showRunnerModal = ref(false)
-
 const statusOptions = [
     { label: '草稿', value: 'draft' },
     { label: '已发布', value: 'published' },
     { label: '已弃用', value: 'deprecated' }
 ]
-
 const nodeTypesMap = {
     Prompt: markRaw(PromptNode),
     Http: markRaw(HTTPNode),
     Regex: markRaw(RegexNode),
     Aggregator: markRaw(AggregatorNode),
-    Excel: markRaw(ExcelNode)
+    Excel: markRaw(ExcelNode),
 }
-function resolveRef(ref: string, definitions: Record<string, any>): any {
-    const refPath = ref.replace(/^#\/definitions\//, '')
-    return definitions?.[refPath]
-}
-
-const router = useRouter()
 const nodes = ref<Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, any> }>>([])
 const edges = ref<Array<{ id: string; source: string; target: string }>>([])
 const nodeTypes = ['Prompt', 'HTTP', 'Regex', 'Aggregator', 'Excel']
 const selectedNode = ref<Record<string, any> | undefined>(undefined)
+// Track if nodes are being dragged
+const isDraggingNodes = ref(false)
 const showPropertyPanel = ref(true)
 const route = useRoute()
 const flowInputs = ref<any[]>([])
-const flowVariables = ref({})
+const flowVariables = ref<Record<string, any>>({})
+
+// 标志位: 是否正在恢复快照（undo/redo）
+const isRestoringSnapshot = ref(false)
+
+// 延迟初始化标记
+const inputsInitialized = ref(false)
+const variablesInitialized = ref(false)
+const nodesInitialized = ref(false)
+const isInitializing = computed(() => {
+    return !inputsInitialized.value || !variablesInitialized.value || !nodesInitialized.value
+})
+
+watch(flowInputs, () => {
+    if (isRestoringSnapshot.value || isInitializing.value) {
+        inputsInitialized.value = true
+        return
+    }
+    snapshot()
+}, { deep: true })
+
+watch(flowVariables, () => {
+    if (isRestoringSnapshot.value || isInitializing.value) {
+        variablesInitialized.value = true
+        return
+    }
+    snapshot()
+}, { deep: true })
+
 const flowMeta = ref<{
     name?: string;
     description?: string;
@@ -157,10 +172,10 @@ const redoStack = ref<Array<{
     meta: Record<string, any>;
 }>>([])
 const hasChanges = ref(false)
-let dragging = false
 let dragOffset = { x: 0, y: 0 }
 let undoLimitExceeded = false
 
+// 配合 Snapshot 进行数据快照
 function getCurrentFlowState() {
     return {
         nodes: JSON.parse(JSON.stringify(nodes.value)),
@@ -171,21 +186,33 @@ function getCurrentFlowState() {
     }
 }
 
+/*
+    NOTE: 快照的时机
+    1. VUE-FLOW
+        - onNodesChange
+        - onEdgesChange
+        - onDrop
+        - onConnect
+        - onViewportChange (not supported yet)
+    2. WATCH
+        - flowInputs
+        - flowVariables
+        - flowMeta (not supported yet)
+        - nodes's data (not supported yet)
+    3. NODE FORM
+        - handleNodeUpdate
+    4. TEST DIALOG
+        - ??
+    5. SAVE / PUBLISH
+        - handleSave
+        - handlePublish
+ */
 function snapshot() {
-
-    // console.log('📦 snapshot called by:', Error().stack || 'unknown caller')
-
     // 保存当前状态到撤销栈
     const flowStore = useFlowStore()
     const lastState = flowStore.getFlowState()
-
-    // // 检查当前状态是否与上一个状态相同
-    // if (undoStack.value.length > 0 && JSON.stringify(lastState) === JSON.stringify(undoStack.value[undoStack.value.length - 1])) {
-    //     return
-    // }
-
-    // 插入 lastState 到撤销栈
-    undoStack.value.push(JSON.parse(JSON.stringify(lastState)))
+    const currentState = getCurrentFlowState()
+    undoStack.value.push(lastState)
 
     // 最大长度限制
     if (undoStack.value.length > 50) {
@@ -194,7 +221,6 @@ function snapshot() {
     }
 
     // 更新当前状态
-    const currentState = getCurrentFlowState()
     flowStore.setFlowState(currentState)
 
     // 更新撤销栈
@@ -211,9 +237,34 @@ function onViewportChange({ x, y, zoom }: { x: number; y: number; zoom: number }
     }
 }
 
+// Listen to all node-level custom events
+function onNodeEvent(event: { type: string;[key: string]: any }) {
+    if (event?.type === 'run') {
+        console.log('Node run triggered:', event);
+    }
+}
+
+const needsSnapshot = ref(false)
+
+// VueFlow 事件处理
 function onNodesChange(changes: NodeChange[]) {
     const hasRemoval = changes.some(change => change.type === 'remove')
     const hasPositionChange = changes.some(change => change.type === 'position')
+    const hasSelectionChange = changes.some(change => change.type === 'select')
+    const hasDimensionsChange = changes.some(change => change.type === 'dimensions')
+
+    // console.log('onNodesChange', hasRemoval, hasPositionChange, hasSelectionChange, hasDimensionsChange, changes)
+
+    // Set dragging state based on position change
+    if (hasPositionChange) {
+        if ('dragging' in changes[0] && changes[0].dragging) {
+            isDraggingNodes.value = true
+        } else {
+            isDraggingNodes.value = false
+            // End of dragging, save the position
+            snapshot()
+        }
+    }
 
     if (hasRemoval) {
         changes.forEach(change => {
@@ -229,16 +280,29 @@ function onNodesChange(changes: NodeChange[]) {
                 })
             }
         })
-
-        if (snapshotTimeout) clearTimeout(snapshotTimeout)
-        pendingEdgeSnapshot = false
-        snapshot()
+        // Node removal, save the state
+        needsSnapshot.value = true
+        /* 
+            NOTE: 删除节点时的 Lifecycle
+            1. 有边，触发顺序
+                onEdgesChange(hasRemoval true) -> 
+                onNodesChange(removal true) -> 
+                onEdgesChange([空数组]).
+            2. 无边，触发顺序
+                onNodesChange(removal true) ->
+                onEdgesChange([空数组]).
+        */
         selectedNode.value = undefined
     }
 }
 
+// VueFlow 事件处理
 function onEdgesChange(changes: EdgeChange[]) {
     const hasRemoval = changes.some(change => change.type === 'remove')
+    const isEmptyChange = changes.length === 0;
+
+    // console.log('onEdgesChange', hasRemoval, changes)
+
     if (hasRemoval) {
         // 查找所有目标节点
         changes.forEach(change => {
@@ -252,18 +316,25 @@ function onEdgesChange(changes: EdgeChange[]) {
                 }
             }
         })
-        pendingEdgeSnapshot = true
-        if (snapshotTimeout) clearTimeout(snapshotTimeout)
-        snapshotTimeout = setTimeout(() => {
-            if (pendingEdgeSnapshot) {
-                snapshot()
-            }
-            pendingEdgeSnapshot = false
-            snapshotTimeout = null
-        }, 0)
+        /* 
+            如果是因为删除节点导致的，
+            边的删除和节点删除会记录两次快照。
+         */
+        needsSnapshot.value = true
+    }
+    // Only snapshot if all changes have been processed, i.e. empty changes array
+    if (isEmptyChange && needsSnapshot.value) {
+        /* 
+            This indicates that the changes have been processed 
+            and no further changes are expected.
+        */
+        // Save the current state to the undo stack
+        snapshot()
+        needsSnapshot.value = false
     }
 }
 
+// 接收节点的 Form 更新事件
 function handleNodeUpdate(updatedData: Record<string, any>) {
 
     if (!selectedNode.value) return
@@ -335,7 +406,7 @@ async function handleSave() {
     })
 
     if (!confirmed) {
-        return
+        return false
     }
     try {
         const res = await request.put(TenantSpaceAPI.flows.config(flowId), {
@@ -365,14 +436,31 @@ async function handleSave() {
         }
 
         hasChanges.value = false
+        return true
     } catch (err) {
         window.$message?.error('保存失败')
         console.error(err)
+        return false
+    }
+}
+
+// Handler for the 测试 button, checks for unsaved changes before opening runner modal
+async function handleTestClick() {
+    if (hasChanges.value) {
+        // Directly save if there are unsaved changes, no dialog
+        const saved = await handleSave();
+        // Only open modal if save succeeded and no unsaved changes remain
+        if (saved && !hasChanges.value) {
+            showRunnerModal.value = true;
+        }
+    } else {
+        showRunnerModal.value = true;
     }
 }
 
 function undo() {
     if (undoStack.value.length === 0) return
+    isRestoringSnapshot.value = true
     // 保存当前状态到重做栈
     const currentState = getCurrentFlowState()
     redoStack.value.push(currentState)
@@ -380,45 +468,52 @@ function undo() {
     const last = undoStack.value.pop()
     if (last) {
         nodes.value = last.nodes
-    }
-    edges.value = (last?.edges ?? []) as Array<{ id: string; source: string; target: string }>
-    if (last) {
-        flowInputs.value = last.inputs
-    }
-    if (last) {
-        flowVariables.value = last.variables
-    }
-    flowMeta.value = {
-        ...(last?.meta ?? {}),
-        frontend: (last?.meta?.frontend ?? { viewport: { x: 0, y: 0, zoom: 1 } })
-    }
-    // 更新视口
-    const viewport = last?.meta?.frontend?.viewport ?? { x: 0, y: 0, zoom: 1 }
-    if (viewport) {
-        vueFlowRef.value?.setViewport?.(viewport)
-    }
-    // 更新当前状态
-    if (last) {
+        edges.value = (last.edges ?? []) as Array<{ id: string; source: string; target: string }>
+        // 替换 flowInputs.value 内容，确保 Vue 能追踪
+        flowInputs.value.splice(0, flowInputs.value.length, ...last.inputs)
+        Object.keys(flowVariables.value).forEach(k => delete flowVariables.value[k])
+        Object.assign(flowVariables.value, last.variables)
+        flowMeta.value = {
+            ...(last.meta ?? {}),
+            frontend: (last.meta?.frontend ?? { viewport: { x: 0, y: 0, zoom: 1 } })
+        }
+        // 更新视口
+        const viewport = last.meta?.frontend?.viewport ?? { x: 0, y: 0, zoom: 1 }
+        if (viewport) {
+            vueFlowRef.value?.setViewport?.(viewport)
+        }
+        // 更新当前状态
         useFlowStore().setFlowState(last)
     }
     // 更新撤销栈
     if (undoStack.value.length === 0 && !undoLimitExceeded) {
         hasChanges.value = false
     }
+    setTimeout(() => {
+        isRestoringSnapshot.value = false
+    })
 }
 
 function redo() {
     if (redoStack.value.length === 0) return
+    isRestoringSnapshot.value = true
     // 保存当前状态到撤销栈
     const currentState = getCurrentFlowState()
     undoStack.value.push(currentState)
     // 从重做栈中获取下一个状态
     const next = redoStack.value.pop()
-    if (!next) return
+    if (!next) {
+        setTimeout(() => {
+            isRestoringSnapshot.value = false
+        })
+        return
+    }
     nodes.value = next.nodes
     edges.value = next.edges
-    flowInputs.value = next.inputs
-    flowVariables.value = next.variables
+    // 替换 flowInputs.value 内容，确保 Vue 能追踪
+    flowInputs.value.splice(0, flowInputs.value.length, ...next.inputs)
+    Object.keys(flowVariables.value).forEach(k => delete flowVariables.value[k])
+    Object.assign(flowVariables.value, next.variables)
     flowMeta.value = {
         ...next.meta,
         frontend: next.meta.frontend || { viewport: { x: 0, y: 0, zoom: 1 } }
@@ -432,6 +527,9 @@ function redo() {
     useFlowStore().setFlowState(next)
     // 更新撤销栈
     hasChanges.value = true
+    setTimeout(() => {
+        isRestoringSnapshot.value = false
+    })
 }
 
 onMounted(async () => {
@@ -440,6 +538,9 @@ onMounted(async () => {
         try {
             const res = await request.get(TenantSpaceAPI.flows.get(flowId))
             if (res?.data?.data?.config) {
+                // 存储 flowDefinition
+                flowDefinition.value = res.data.data
+                // console.log('流程定义:', flowDefinition.value)
                 // nodes
                 nodes.value = (res.data.data.config.nodes || []).map(
                     (
@@ -513,7 +614,6 @@ onMounted(async () => {
                 size: 'small',
                 type: 'primary',
                 onClick: handleSave,
-                disabled: !hasChanges.value
             }, { default: () => '保存' }),
 
         () =>
@@ -521,8 +621,14 @@ onMounted(async () => {
                 size: 'small',
                 type: 'warning',
                 onClick: publishFlow,
-                disabled: flowMeta.value.status === 'published' || flowMeta.value.status === 'deprecated'
             }, { default: () => '发布' }),
+        () =>
+            h('div', {}, '|'),
+        () =>
+            h(NButton, {
+                size: 'small',
+                onClick: handleTestClick,
+            }, { default: () => '测试' }),
 
         // Inser a separator
         () =>
@@ -532,12 +638,6 @@ onMounted(async () => {
                 size: 'small',
                 onClick: () => (showYamlModal.value = true)
             }, { default: () => '查看 YAML' }),
-        () =>
-            h(NButton, {
-                size: 'small',
-                onClick: () => (showRunnerModal.value = true),
-                disabled: flowMeta.value.status !== 'published'
-            }, { default: () => '测试' }),
         () =>
             h(NButton, {
                 size: 'small',
@@ -585,7 +685,6 @@ async function publishFlow() {
         const res = await request.post(TenantSpaceAPI.flows.publish(flowId))
         if (res?.data?.success) {
             window.$message?.success('发布成功')
-            flowMeta.value.status = 'published'
         } else {
             window.$message?.info(res?.data?.message || '当前流程已发布或不可发布')
         }
@@ -699,7 +798,6 @@ async function onDrop(event: DragEvent) {
         position,
         data: defaultNodeData
     })
-    snapshot()
 }
 
 function onConnect(params: { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }) {
@@ -721,14 +819,6 @@ function onConnect(params: { source: string; target: string; sourceHandle?: stri
         targetNode.data.depends_on.push(sourceNode.data.name)
     }
     snapshot()
-}
-
-function resetZoom() {
-    vueFlowRef.value?.zoomTo?.(1)
-}
-
-function resetViewport() {
-    vueFlowRef.value?.setViewport?.({ x: 0, y: 0, zoom: 1 })
 }
 
 function onNodeClick(event: { node: Record<string, any> }) {
@@ -753,12 +843,12 @@ function onNodeClick(event: { node: Record<string, any> }) {
 
 .left-panel {
     width: 260px;
-    border-right: 1px solid #eee;
+    /* border-right: 1px solid #eee; */
 }
 
 .right-panel {
     width: 300px;
-    border-left: 1px solid #eee;
+    /* border-left: 1px solid #eee; */
 }
 
 .canvas-panel {
@@ -768,27 +858,12 @@ function onNodeClick(event: { node: Record<string, any> }) {
     min-width: 100px;
 }
 
-.zoom-reset-button {
-    position: absolute;
-    bottom: 12px;
-    right: 12px;
-    z-index: 10;
-}
-
-.reset-viewport-button {
-    position: absolute;
-    bottom: 12px;
-    right: 80px;
-    z-index: 10;
-}
-
 .draggable-node {
-    padding: 6px 8px;
+    padding: 8px 8px;
     margin-bottom: 8px;
-    border: 1px solid #ccc;
+    border: 0.1rem solid #ccc;
     border-radius: 4px;
     cursor: grab;
     user-select: none;
-    background: #f9f9f9;
 }
 </style>

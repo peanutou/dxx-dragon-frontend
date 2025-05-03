@@ -86,9 +86,8 @@ const sortOrder = ref<'ascend' | 'descend' | null>(null)
 const pagination = ref({ pageSize: pageSize.value, page: page.value, itemCount: total.value })
 
 const statusOptions = [
-    { label: '草稿', value: 'draft' },
-    { label: '已发布', value: 'published' },
-    { label: '已弃用', value: 'deprecated' }
+    { label: '已启动', value: 'started' },
+    { label: '已停止', value: 'stoped' },
 ]
 
 const columns: DataTableColumns<Flow> = [
@@ -160,9 +159,16 @@ const columns: DataTableColumns<Flow> = [
         key: 'status',
         render: (row) => {
             const match = statusOptions.find(opt => opt.value === row.status)
+            const type = row.status === 'started'
+                ? 'success'
+                : row.status === 'stoped'
+                ? 'default'
+                : row.status === 'error'
+                ? 'error'
+                : 'warning'
             return h(
                 NTag,
-                { type: row.status === 'published' ? 'success' : row.status === 'deprecated' ? 'warning' : 'default', size: 'small' },
+                { type, size: 'small' },
                 { default: () => (match ? match.label : row.status || '-') }
             )
         }

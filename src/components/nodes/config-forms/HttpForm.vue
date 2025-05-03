@@ -35,12 +35,19 @@ import type { Node } from '@vue-flow/core'
 const props = defineProps<{
     node: Node
 }>()
+const localData = ref<any>({})
+watch(
+    () => props.node.data,
+    (newData) => {
+        localData.value = { ...newData }
+    },
+    { immediate: true }
+)
 
 const emit = defineEmits<{
     (e: 'update', data: any): void
 }>()
 
-const localData = ref({ ...props.node.data })
 const headersJson = ref(JSON.stringify(localData.value.headers || {}, null, 2))
 const bodyJson = ref(JSON.stringify(localData.value.body || {}, null, 2))
 

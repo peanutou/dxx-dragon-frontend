@@ -47,9 +47,9 @@ function getInputElement() {
         return null
     }
     if (inputType === 'textarea') {
-        return inputRef.value.$el.querySelector('textarea') as HTMLTextAreaElement | null
-    } else if (inputType === 'input') {
-        return inputRef.value.$el.querySelector('input') as HTMLInputElement | null
+        return inputRef.value?.$el.querySelector('textarea') as HTMLTextAreaElement | null
+    } else if (inputType === 'text') {
+        return inputRef.value?.$el.querySelector('input') as HTMLInputElement | null
     }
     console.warn('❌ Unsupported input type:', inputType)
     return null
@@ -59,9 +59,11 @@ function selectSuggestion(suggestion: string) {
     const input = getInputElement()
     if (!input) return
     const cursor = input.selectionStart ?? 0
-    const text = modelValue.value
+    const text = modelValue.value || ''
     const insertion = suggestion + '}}'
-    modelValue.value = text.slice(0, cursor - 1) + insertion + text.slice(cursor)
+    modelValue.value = text.slice(0, cursor) + insertion + text.slice(cursor)
+    console.log('🎯 Inserted suggestion:', suggestion, 'at:', cursor)
+    console.log('🎯 Updated modelValue:', modelValue.value)
     suggestionState.show = false
 }
 
@@ -70,7 +72,7 @@ function handleKeyup(e: KeyboardEvent) {
         const input = getInputElement()
         if (!input) return
         const cursor = input.selectionStart ?? 0
-        const text = modelValue.value.slice(0, cursor)
+        const text = (modelValue.value || '').slice(0, cursor)
         // console.log(cursor, modelValue.value, text)
         if (text.endsWith('{{')) {
             // console.log('🎯 Trigger suggestions at:', cursor)

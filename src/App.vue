@@ -5,12 +5,15 @@ import {
     NDialogProvider,
     NNotificationProvider,
     NLoadingBarProvider,
-    NBackTop
+    NBackTop,
+    darkTheme,
+    lightTheme,
+    drawerDark,
 } from 'naive-ui'
 </script>
 
 <template>
-    <n-config-provider>
+    <n-config-provider :theme="darkTheme">
         <n-message-provider placement="top-right" :max="3">
             <n-dialog-provider>
                 <n-notification-provider>
@@ -25,8 +28,10 @@ import {
 </template>
 
 <style scoped>
-html, body, #app {
-  height: 100%;
-  margin: 0;
+html,
+body,
+#app {
+    height: 100%;
+    margin: 0;
 }
 </style>

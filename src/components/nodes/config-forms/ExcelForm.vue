@@ -4,7 +4,7 @@
             <n-input v-model:value="localData.name" placeholder="请输入节点名称" />
         </n-form-item>
         <n-form-item label="文件 ID" path="file_id">
-            <context-input v-model:value="localData.file_id" type="input" placeholder="请输入文件 ID" />
+            <context-input v-model:modelValue="localData.file_id" type="text" placeholder="请输入文件 ID" />
         </n-form-item>
         <n-form-item label="文件密码" path="password">
             <n-input v-model:value="localData.password" placeholder="请输入文件密码" />
@@ -17,14 +17,14 @@
                 :on-create="() => ({ source: '', target: '' })">
                 <template #default="{ value }">
                     <div class="flex gap-2">
-                        <n-input v-model:value="value.source" placeholder="原始列名" />
+                        <n-input v-model:value="value.source" placeholder="标题位置" />
                         <n-input v-model:value="value.target" placeholder="目标变量名" />
                     </div>
                 </template>
             </n-dynamic-input>
         </n-form-item>
-        <n-form-item label="单元格提取（位置:变量）" path="cell_extract">
-            <n-dynamic-input v-model:value="localData.cell_extract" placeholder="添加单元格提取项"
+        <n-form-item label="单元格提取（位置:变量）" path="cell_rules">
+            <n-dynamic-input v-model:value="localData.cell_rules" placeholder="添加单元格提取项"
                 :on-create="() => ({ source: '', target: '' })">
                 <template #default="{ value }">
                     <div class="flex gap-2">
@@ -51,9 +51,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import {
-    NForm, NFormItem, NInput, NDynamicInput
-} from 'naive-ui'
+import { NForm, NFormItem, NInput, NDynamicInput, NModal, NButton } from 'naive-ui'
 import type { Node } from '@vue-flow/core'
 import ContextInput from '@/components/shared/ContextInput.vue'
 import SchemaInput from '@/components/shared/SchemaInput.vue'
@@ -62,27 +60,28 @@ const props = defineProps<{
     node: Node
 }>()
 
-const emit = defineEmits<{
-    (e: 'update', data: any): void
-}>()
-
-const localData = ref({
-    file_id: '',
-    sheet_name: '',
-    password: '',
-    column_rules: [],
-    cell_extract: [],
-    ...props.node.data,
-})
-const showModal = ref(false)
+const localData = ref<any>({})
 
 watch(
     () => props.node.data,
     (newData) => {
-        localData.value = { ...newData }
+        localData.value = {
+            file_id: '',
+            sheet_name: '',
+            password: '',
+            column_rules: [],
+            cell_rules: [],
+            ...newData,
+        }
     },
     { immediate: true }
 )
+
+const emit = defineEmits<{
+    (e: 'update', data: any): void
+}>()
+
+const showModal = ref(false)
 
 function submit() {
     try {

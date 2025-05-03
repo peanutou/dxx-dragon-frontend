@@ -1,5 +1,20 @@
 <template>
-    <n-form-item v-for="field in inputs" :key="field.name" :label="field.label || field.name" :path="field.name">
+    <n-form-item
+        v-for="field in inputs"
+        :key="field.name"
+        :path="field.name"
+    >
+        <template #label>
+            <span>
+                {{ field.name }}
+                <n-tooltip v-if="field.label" trigger="hover">
+                    <template #trigger>
+                        <span class="ml-1 text-gray-400">ⓘ</span>
+                    </template>
+                    {{ field.label }}
+                </n-tooltip>
+            </span>
+        </template>
         <n-input v-if="field.type === 'string'" v-model:value="inputValues[field.name]"
             :placeholder="`请输入 ${field.label || field.name}`" />
         <n-input-number v-else-if="field.type === 'number'" v-model:value="inputValues[field.name]"
@@ -11,7 +26,7 @@
             <template #default>
                 <div class="flex items-center gap-4">
                     <n-button>点击上传</n-button>
-                    <span v-if="inputValues[field.name]" class="text-xs text-gray-500">
+                    <span v-if="inputValues[field.name]" class="text-xs">
                         已上传：{{ inputValues[field.name] }}
                     </span>
                 </div>
@@ -22,6 +37,8 @@
 </template>
 
 <script setup lang="ts">
+import { h } from 'vue'
+import { NTooltip as nTooltip } from 'naive-ui'
 import type { UploadFileInfo } from 'naive-ui'
 import { TenantSpaceAPI } from '@/apis/endpoints'
 import request from '@/utils/axios'

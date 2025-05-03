@@ -1,29 +1,33 @@
 <template>
-    <div class="h-screen flex flex-col overflow-hidden">
+    <n-layout class="h-screen flex flex-col overflow-hidden">
         <Navbar>
             <component v-for="(node, i) in navbarStore.actions" :key="i" :is="node()" />
         </Navbar>
-        <div class="flex flex-1 overflow-hidden">
-            <aside v-if="!isFullScreen" class="w-64 bg-white border-r shadow-sm flex flex-col justify-between">
-                <div>
-                    <n-menu :options="menuOptions" :value="activeMenuKey" @update:value="handleMenuClick" />
-                </div>
-            </aside>
-            <main class="flex-1 h-full overflow-y-auto bg-gray-50 p-0">
+        <n-layout class="flex flex-1 overflow-hidden h-full" :has-sider="true">
+            <n-layout-sider v-if="!isFullScreen" bordered width="256" content-style="padding: 12px;"
+                class="flex flex-col justify-between">
+                <n-menu :options="menuOptions" :value="activeMenuKey" @update:value="handleMenuClick" />
+            </n-layout-sider>
+            <n-layout-content class="flex-1 h-full overflow-y-auto p-0">
                 <router-view />
-            </main>
-        </div>
-    </div>
+            </n-layout-content>
+        </n-layout>
+    </n-layout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, h } from 'vue'
 import { useUserStore } from '@/store/user'
 import { useNavbarStore } from '@/store/navbar' // Import the new navbar store
 import { useRouter, useRoute } from 'vue-router'
-import { NMenu } from 'naive-ui'
+import { NMenu, NLayoutSider, NLayoutContent, NLayout } from 'naive-ui'
 import Navbar from '@/components/layout/Navbar.vue'
 import { ROUTE } from '@/constants/routes'
+import { HomeOutline, PeopleOutline, AppsOutline, GitBranchOutline, SettingsOutline } from '@vicons/ionicons5'
+
+function renderIcon(icon: any) {
+    return () => h(icon)
+}
 
 const user = useUserStore().user
 const navbarStore = useNavbarStore() // Initialize the navbar store
@@ -33,21 +37,24 @@ const route = useRoute()
 const menuOptions = [
     {
         label: '仪表盘',
-        key: ROUTE.SPACE.DASHBOARD
+        key: ROUTE.SPACE.DASHBOARD,
+        icon: renderIcon(HomeOutline)
     },
     {
         label: '平台管理',
         key: 'platform',
+        icon: renderIcon(SettingsOutline),
         children: [
-            { label: '租户管理', key: ROUTE.PLATFORM.TENANTS }
+            { label: '租户管理', key: ROUTE.PLATFORM.TENANTS, icon: renderIcon(PeopleOutline) }
         ]
     },
     {
         label: '租户空间',
         key: 'space',
+        icon: renderIcon(AppsOutline),
         children: [
-            { label: '租户管理', key: ROUTE.SPACE.PROFILE },
-            { label: '流程管理', key: ROUTE.SPACE.FLOWS.LIST }
+            { label: '租户管理', key: ROUTE.SPACE.PROFILE, icon: renderIcon(PeopleOutline) },
+            { label: '流程管理', key: ROUTE.SPACE.FLOWS.LIST, icon: renderIcon(GitBranchOutline) }
         ]
     }
 ]

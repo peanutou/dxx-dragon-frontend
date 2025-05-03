@@ -1,41 +1,37 @@
 <template>
-    <div class="h-14 w-full flex items-center shadow-sm bg-white border-b justify-between px-4">
-      <!-- 左侧区域：返回按钮 -->
-      <div class="flex items-center gap-4">
-        <n-button
-          v-if="showBackButton"
-          size="small"
-          tertiary
-          @click="router.push(backButtonTarget)"
-        >
-          {{ backButtonText }}
-        </n-button>
-      </div>
-      <div class="w-4" />
-      <!-- 中间区域：动态按钮插槽 -->
-      <div class="flex items-center gap-2 flex-1 justify-start">
-        <div class="flex items-center navbar-button-group">
-          <template v-for="(node, i) in navbarStore.actions" :key="i">
-            <component :is="node()" class="navbar-action-button" />
-          </template>
+    <n-layout-header tag="header" class="h-14 w-full flex items-center shadow-sm border-b justify-between px-4">
+        <!-- 左侧区域：返回按钮 -->
+        <div class="flex items-center gap-4">
+            <n-button v-if="showBackButton" size="small" tertiary @click="router.push(backButtonTarget)">
+                {{ backButtonText }}
+            </n-button>
         </div>
-      </div>
-      <!-- 右侧区域：用户头像及提示 -->
-      <n-tooltip trigger="hover">
-        <template #trigger>
-          <img :src="logo" alt="Logo" class="h-8" />
-        </template>
-        {{ user?.email }}
-      </n-tooltip>
-    </div>
+        <div class="w-4" />
+        <!-- 中间区域：动态按钮插槽 -->
+        <div class="flex items-center gap-2 flex-1 justify-start">
+            <div class="flex items-center navbar-button-group">
+                <template v-for="(node, i) in navbarStore.actions" :key="i">
+                    <component :is="node()" class="navbar-action-button" />
+                </template>
+            </div>
+        </div>
+        <!-- 右侧区域：用户头像及提示 -->
+        <n-tooltip trigger="hover">
+            <template #trigger>
+                <img :src="logo" alt="Logo" class="h-8" />
+            </template>
+            {{ user?.email }}
+        </n-tooltip>
+    </n-layout-header>
 </template>
 
 <script setup>
-import logo from '@/assets/logo-black-white.svg'
+import logo from '@/assets/logo-circle.svg'
 import { useRoute, useRouter } from 'vue-router'
 import { computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import { useNavbarStore } from '@/store/navbar'
+import { NButton, NTooltip, NLayoutHeader } from 'naive-ui'
 
 const route = useRoute()
 const router = useRouter()
@@ -50,13 +46,13 @@ const isFullScreen = computed(() => route.name === 'FlowEditor')
 
 <style scoped>
 .navbar-button-group {
-  display: flex;
-  gap: 6px;
+    display: flex;
+    gap: 6px;
 }
 
 .navbar-action-button {
-  padding-left: 12px;
-  padding-right: 12px;
-  border: none;
+    padding-left: 12px;
+    padding-right: 12px;
+    border: none;
 }
 </style>

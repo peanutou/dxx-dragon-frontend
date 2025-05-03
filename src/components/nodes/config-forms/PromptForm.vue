@@ -52,29 +52,29 @@ import type { Node } from '@vue-flow/core'
 const props = defineProps<{
     node: Node
 }>()
-
+const localData = ref<any>({})
+const showModal = ref(false)
 const emit = defineEmits<{
     (e: 'update', data: any): void
 }>()
 
-const defaultPromptData = {
-    name: '',
-    model: 'gpt-4o',
-    temperature: 0,
-    output_json: false,
-    template: '',
-    outputs_schema: {}
-}
-
-const localData = ref({ ...defaultPromptData, ...(props.node.data || {}) })
-const showModal = ref(false)
-
 watch(
-    () => props.node.data, (newData) => {
+    () => props.node.data, 
+    (newData) => {
         // 合并默认结构，避免 undefined 字段
-        localData.value = { ...defaultPromptData, ...(newData || {}) }
+        localData.value = { 
+            // defaultPromptData
+            name: '',
+            model: 'gpt-4o',
+            temperature: 0,
+            output_json: false,
+            template: '',
+            outputs_schema: {}, 
+            ...(newData || {}),
+        }
     },
-    { immediate: true })
+    { immediate: true }
+)
 
 const submit = () => {
     emit('update', localData.value)

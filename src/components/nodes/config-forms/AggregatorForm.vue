@@ -50,12 +50,19 @@ import SchemaInput from '@/components/shared/SchemaInput.vue'
 const props = defineProps<{
     node: Node
 }>()
+const localData = ref<any>({})
+watch(
+    () => props.node.data,
+    (newData) => {
+        localData.value = { ...newData }
+    },
+    { immediate: true }
+)
 
 const emit = defineEmits<{
     (e: 'update', data: any): void
 }>()
 
-const localData = ref({ ...props.node.data })
 const strategy = ref(localData.value.strategy || 'none')
 const templateJson = ref(JSON.stringify(localData.value.template || {}, null, 2))
 const showModal = ref(false)

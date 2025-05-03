@@ -63,7 +63,7 @@
             </div>
         </div>
         <n-data-table :columns="columns" :data="roles" :loading="loading" :pagination="pagination"
-            :on-update:sorter="handleSortChange" :row-key="row => row.role_id"
+            :on-update:sorter="handleSortChange" :row-key="row => row.role_id" remote
             v-model:checked-row-keys="selectedRowKeys" />
     </n-card>
 </template>
@@ -241,9 +241,6 @@ const createRules = {
     ],
     description: []
 }
-
-const showEditModal = ref(false)
-const editingRole = ref<any>(null)
 
 const availablePermissions = ref<Record<string, string[]>>({})
 

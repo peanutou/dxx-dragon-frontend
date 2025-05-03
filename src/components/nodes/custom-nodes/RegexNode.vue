@@ -1,21 +1,15 @@
 <template>
-    <div :class="[
-        'relative border rounded text-xs shadow node-container',
-        getNodeBgClassByType(props?.data?.type),
-        { 'node-selected': props.selected }
-    ]">
+    <NodeLayout :node-type="props?.data?.type" :selected="props.selected">
         <NodeName :title="getNodeCapitalizedType(props?.data?.type)" :data="props.data" />
-        <Handle type="source" :position="Position.Right" />
-        <Handle type="target" :position="Position.Left" />
-    </div>
+    </NodeLayout>
 </template>
 
 <script setup lang="ts">
 import './shared-style.css'
-import { Handle, Position } from '@vue-flow/core'
 import { onMounted, ref, computed, watch } from 'vue'
 import type { NodeProps } from '@vue-flow/core'
 import NodeName from '@/components/shared/NodeName.vue'
+import NodeLayout from '@/components/shared/NodeLayout.vue'
 import { getNodeBgClassByType, getNodeCapitalizedType } from './shared-behavior'
 
 const props = defineProps<NodeProps>()
@@ -25,6 +19,4 @@ defineEmits(['updateNodeInternals'])
 
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

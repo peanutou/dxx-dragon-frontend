@@ -9,7 +9,7 @@
                     :autosize="{ minRows: 6 }" style="font-size: 12px;"/>
                 <n-button @click="generateSchema" type="primary">生成 Schema</n-button>
                 <div style="max-height: 300px; overflow: auto;">
-                  <VueJsonPretty :data="schema" :deep="2" :showLine="false" showLength showIcon />
+                  <VueJsonPretty :data="schema" :deep="2" :showLine="false" showLength showIcon theme="dark"/>
                 </div>
             </n-space>
             <template #footer>
@@ -25,7 +25,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useMessage } from 'naive-ui'
-import schematize from '@/utils/schematize' // 你需要实现这个函数
+import schematize from '@/utils/schematize' // Generate schema from JSON
 import VueJsonPretty from 'vue-json-pretty'
 import 'vue-json-pretty/lib/styles.css'
 

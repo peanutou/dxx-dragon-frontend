@@ -49,6 +49,7 @@ export const TenantSpaceAPI = {
         config: (id: string) => `/space/flows/${id}/config`,
         run: (id: string) => `/space/flows/${id}/run`,
         runDebug: (id: string) => `/space/flows/${id}/run-debug`,
+        runTest: (id: string) => `/space/flows/${id}/test`,
         testNode: (id: string) => `/space/flows/${id}/test-node`,
     },
     files: {

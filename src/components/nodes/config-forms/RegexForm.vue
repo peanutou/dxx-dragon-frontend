@@ -36,12 +36,18 @@ import type { Node } from '@vue-flow/core'
 const props = defineProps<{
   node: Node
 }>()
+const localData = ref<any>({})
+watch(
+    () => props.node.data,
+    (newData) => {
+        localData.value = { ...newData }
+    },
+    { immediate: true }
+)
 
 const emit = defineEmits<{
   (e: 'update', data: any): void
 }>()
-
-const localData = ref({ ...props.node.data })
 
 watch(() => props.node.data, (newData) => {
   localData.value = { ...newData }

@@ -1,6 +1,6 @@
 <template>
     <div class="p-4 space-y-4">
-        <div v-for="(input, index) in localInputs" :key="index" class="p-4 border rounded space-y-0">
+        <div v-for="(input, index) in inputs" :key="index" class="p-4 border rounded space-y-0">
 
             <n-form-item label="名称" label-placement="left" label-width="80px" class="flex-1"
                 :feedback="!isValidName(input.name) ? '变量名必须以字母或下划线开头，仅可包含字母、数字和下划线' : ''"
@@ -42,16 +42,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import { NFormItem, NInput, NSelect, NSwitch, NButton } from 'naive-ui'
 
 const props = defineProps<{
     inputs: Array<any>
 }>()
 
-const emit = defineEmits<{
-    (e: 'update', value: any[]): void
-}>()
 
 interface Input {
     name: string;
@@ -61,15 +57,10 @@ interface Input {
     options: string[];
 }
 
-const localInputs = ref<Input[]>(props.inputs ? (props.inputs as Input[]).map(input => ({
-    ...input,
-    options: input.options ?? []
-})) : [])
-
-watch(localInputs, (val) => emit('update', val), { deep: true })
+const inputs = props.inputs
 
 function addInput() {
-    localInputs.value.push({
+    inputs.push({
         name: '',
         label: '',
         type: 'string',
@@ -79,7 +70,7 @@ function addInput() {
 }
 
 function removeInput(index: number) {
-    localInputs.value.splice(index, 1)
+    inputs.splice(index, 1)
 }
 
 function addOption(input: Input) {

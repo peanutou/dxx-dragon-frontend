@@ -1,22 +1,18 @@
 <template>
-    <div :class="[
-        'relative border rounded text-xs shadow node-container',
-        getNodeBgClassByType(props?.data?.type),
-        { 'node-selected': props.selected }
-    ]">
+    <NodeLayout :node-type="props?.data?.type" :selected="props.selected">
         <NodeName :title="getNodeCapitalizedType(props?.data?.type)" :data="props.data" />
-        <Handle type="source" :position="Position.Right" />
-        <Handle type="target" :position="Position.Left" />
-    </div>
+    </NodeLayout>
 </template>
 
 <script setup lang="ts">
 import './shared-style.css'
+import { NButton } from 'naive-ui'
 import { Handle, Position } from '@vue-flow/core'
 import { onMounted, ref, computed, watch } from 'vue'
 import type { NodeProps } from '@vue-flow/core'
 import NodeName from '@/components/shared/NodeName.vue'
 import { getNodeBgClassByType, getNodeCapitalizedType } from './shared-behavior'
+import NodeLayout from '@/components/shared/NodeLayout.vue'
 
 const props = defineProps<NodeProps>()
 // 显式声明 updateNodeInternals 事件，以避免 Vue 在 fragment 根节点组件中报出多余监听器警告。
@@ -25,6 +21,4 @@ defineEmits(['updateNodeInternals'])
 
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
