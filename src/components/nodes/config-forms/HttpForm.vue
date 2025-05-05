@@ -41,11 +41,11 @@ watch(
     (newData) => {
         localData.value = { ...newData }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 )
 
 const emit = defineEmits<{
-    (e: 'update', data: any): void
+    (e: 'update:config', data: any): void
 }>()
 
 const headersJson = ref(JSON.stringify(localData.value.headers || {}, null, 2))
@@ -61,7 +61,7 @@ function submit() {
     try {
         localData.value.headers = JSON.parse(headersJson.value || '{}')
         localData.value.body = JSON.parse(bodyJson.value || '{}')
-        emit('update', localData.value)
+        emit('update:config', localData.value)
     } catch (e) {
         window.$message?.error?.('请检查 Headers 和 Body 的 JSON 格式是否正确')
     }

@@ -39,8 +39,8 @@
 
 <script setup lang="ts">
 import { TenantSpaceAPI } from '@/apis/endpoints'
-import { NModal, NFormItem, NInput, NMenu } from 'naive-ui'
-import { ref, onMounted, computed, watch, h } from 'vue'
+import { NModal, NFormItem, NInput, NMenu, pProps } from 'naive-ui'
+import { ref, computed, watch, h } from 'vue'
 import request from '@/utils/axios'
 import { useRoute } from 'vue-router'
 import { useFlowStore } from '@/store/flow'
@@ -59,8 +59,30 @@ import {
 } from '@vicons/ionicons5'
 import { NIcon } from 'naive-ui'
 
+const route = useRoute()
 const collapsed = ref(true)
 const defaultExpandedKeys = ref(['data-processing-tools', 'people', 'beverage'])
+const visible = defineModel<boolean>('show')
+const props = defineProps<{
+    nodeData: any
+}>()
+const result = ref<string | null>(null)
+const flowSnapshot = ref<any>({})
+const flowStore = useFlowStore()
+const loading = ref(false)
+const nodeResultPath = ref('');
+const parsedResult = computed(() => {
+    try {
+        return result.value ? JSON.parse(result.value) : null
+    } catch {
+        return { error: 'Invalid JSON' }
+    }
+})
+const nodeSchema = computed(() => {
+    return schematize(
+        getValueByPath(parsedResult.value, nodeResultPath.value)
+    )
+})
 
 function expandIcon() {
     return h(NIcon, null, { default: () => h(CaretDownOutline) })
@@ -89,17 +111,7 @@ function renderIcon(icon: Component) {
     return () => h(NIcon, null, { default: () => h(icon) })
 }
 
-function handleMenuSelect(selectedKeys: string | string[]) {
-    // 确保 selectedKeys 是数组类型
-    const keys = Array.isArray(selectedKeys) ? selectedKeys : [selectedKeys];
-    const selectedKey = keys[0];
-
-    if (selectedKey === 'generate-schema') {
-        // NOTE：FlowEditor 组件会监听这里的数据变化
-        
-    }
-}
-
+const emit = defineEmits(['update:schema', 'update:save-test', 'update:clear-test'])
 const menuOptions: MenuOption[] = [
     {
         label: '数据处理工具',
@@ -108,7 +120,7 @@ const menuOptions: MenuOption[] = [
         children: [
             {
                 type: 'group',
-                label: 'Schema',
+                label: '结果数据模型',
                 key: 'people',
                 children: [
                     {
@@ -118,56 +130,53 @@ const menuOptions: MenuOption[] = [
                     },
                 ]
             },
-            // {
-            //     label: 'Beverage',
-            //     key: 'beverage',
-            //     icon: renderIcon(WineIcon),
-            //     children: [
-            //         {
-            //             label: 'Whisky',
-            //             key: 'whisky'
-            //         }
-            //     ]
-            // },
+            {
+                type: 'group',
+                label: '测试数据',
+                key: 'debug',
+                children: [
+                    {
+                        label: '保存测试数据',
+                        key: 'save-test',
+                        icon: renderIcon(WineIcon),
+                    },
+                    {
+                        label: '清除测试数据',
+                        key: 'clear-test',
+                        icon: renderIcon(WineIcon),
+                    },
+                ]
+            },
             // {
             //     label: 'The past increases. The future recedes.',
-            //     key: 'the-past-increases-the-future-recedes'
+            //     key: 'the-past-increases-the-future-recedes',
+            //     disabled: true,
             // }
         ]
     },
 ]
 
-const route = useRoute()
-// 显式声明 updateNodeInternals 事件，以避免 Vue 在 fragment 根节点组件中报出多余监听器警告。
-// 该事件通常由 VueFlow 传入，用于请求节点更新内部布局。
+function handleMenuSelect(selectedKeys: string | string[]) {
+    // 确保 selectedKeys 是数组类型
+    const keys = Array.isArray(selectedKeys) ? selectedKeys : [selectedKeys];
+    const selectedKey = keys[0];
 
-const visible = defineModel<boolean>('show')
-const props = defineProps<{
-    nodeData: any
-}>()
-const parsedResult = computed(() => {
-    try {
-        return result.value ? JSON.parse(result.value) : null
-    } catch {
-        return { error: 'Invalid JSON' }
+    if (selectedKey === 'generate-schema') {
+        emit('update:schema', nodeSchema.value)
     }
-})
-const result = ref<string | null>(null)
-const storedResult = ref<string | null>(null)
-const flowSnapshot = ref<any>({})
-const flowStore = useFlowStore()
-const loading = ref(false)
-const nodeResultPath = ref('root.data.debug_info.node.outputs.result');
-const nodeSchema = computed(() => {
-    return schematize(getValueByPath(parsedResult.value, nodeResultPath.value))
-})
+    if (selectedKey === 'save-test') {
+        emit('update:save-test', {
+            test_inputs: props.nodeData.test_inputs,
+            debug_info: parsedResult.value?.data?.node.debug_info,
+            outputs: parsedResult.value?.data?.node.outputs,
+        })
+    }
+    if (selectedKey === 'clear-test') {
+        result.value = null
+        emit('update:clear-test', {})
+    }
 
-onMounted(() => {
-    flowSnapshot.value = flowStore.getFlowState()
-    // NOTE:
-    // 这里先不删除 test_inputs 中的过时数据，
-    // 因为可能在测试过程中，尽量提供方便，而不是尽快删除。
-})
+}
 
 async function handleRun() {
     loading.value = true
@@ -180,10 +189,8 @@ async function handleRun() {
             }
         )
         result.value = JSON.stringify(res.data, null, 4)
-        storedResult.value = result.value
     } catch (err: any) {
         result.value = `❌ ${err.message}`
-        storedResult.value = result.value
     } finally {
         loading.value = false
     }
@@ -195,7 +202,7 @@ function handleJsonNodeClick(node: any) {
     if (node.path === nodeResultPath.value) {
         console.log(nodeSchema.value)
     } else {
-        console.log('Clicked JSON node:', node)        
+        console.log('Clicked JSON node:', node)
     }
 }
 
@@ -212,6 +219,35 @@ function getValueByPath(obj: any, path: string): any {
     return keys.reduce((acc, key) => (acc && acc[key] !== undefined) ? acc[key] : undefined, obj);
 }
 
+function initializeTestData(node: any) {
+    if (!node) return
+    result.value = null
+    if (node.outputs) {
+        result.value = JSON.stringify({
+            data: node
+        })
+    } else {
+        node.test_inputs = {}
+    }
+    nodeResultPath.value = 'root.data.node.outputs.result'
+    flowSnapshot.value = flowStore.getFlowState()
+
+    // Ensure test_inputs and mock_flow_inputs are initialized
+    if (!node.test_inputs || typeof node.test_inputs !== 'object') {
+        node.test_inputs = {}
+    }
+    if (!node.test_inputs.mock_flow_inputs || typeof node.test_inputs.mock_flow_inputs !== 'object') {
+        node.test_inputs.mock_flow_inputs = {}
+    }
+}
+
+watch(
+    () => props.nodeData,
+    (newNodeData) => {
+        initializeTestData(newNodeData)
+    },
+    { immediate: true }
+)
 </script>
 
 <style scoped>

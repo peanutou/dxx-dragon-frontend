@@ -1,5 +1,5 @@
 <template>
-    <component :is="formComponent" :node="node" @update="emit('update', $event)" />
+    <component :is="formComponent" :node="node" @update:config="emit('update:config', $event)" />
 </template>
 
 <script setup>
@@ -9,12 +9,13 @@ import HttpForm from './config-forms/HttpForm.vue'
 import RegexForm from './config-forms/RegexForm.vue'
 import AggregatorForm from './config-forms/AggregatorForm.vue'
 import ExcelForm from './config-forms/ExcelForm.vue'
+import ComparerForm from './config-forms/ComparerForm.vue'
 
 const props = defineProps({
     node: Object
 })
 
-const emit = defineEmits(['update'])
+const emit = defineEmits(['update:config'])
 
 const formComponent = computed(() => {
     switch (props.node?.type) {
@@ -28,6 +29,8 @@ const formComponent = computed(() => {
             return AggregatorForm
         case 'Excel':
             return ExcelForm
+        case 'Comparer':
+            return ComparerForm
         default:
             return null
     }

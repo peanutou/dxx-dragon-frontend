@@ -61,31 +61,26 @@ const props = defineProps<{
 }>()
 
 const localData = ref<any>({})
+const showModal = ref(false)
 
 watch(
     () => props.node.data,
     (newData) => {
         localData.value = {
-            file_id: '',
-            sheet_name: '',
-            password: '',
-            column_rules: [],
-            cell_rules: [],
             ...newData,
         }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 )
 
 const emit = defineEmits<{
-    (e: 'update', data: any): void
+    (e: 'update:config', data: any): void
 }>()
 
-const showModal = ref(false)
 
 function submit() {
     try {
-        emit('update', localData.value)
+        emit('update:config', localData.value)
     } catch (e) {
         window.$message?.error?.('请检查模板 JSON 格式是否正确:')
     }

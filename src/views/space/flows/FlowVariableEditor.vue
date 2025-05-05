@@ -19,26 +19,28 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { NFormItem, NInput, NButton, NAutoComplete } from 'naive-ui'
+import { useFlowStore } from '@/store/flow'
+import { storeToRefs } from 'pinia'
 
-const props = defineProps<{
-    variables: Record<string, string>
-    inputs: { name: string }[]
-}>()
+const flowStore = useFlowStore()
+const { variables, inputs } = storeToRefs(flowStore)
+const flowVariables = variables
+const flowInputs = inputs
 
-const localPairs = ref<[string, string][]>(Object.entries(props.variables))
+const localPairs = ref<[string, string][]>(Object.entries(flowVariables.value))
 
 watch(localPairs, (newPairs) => {
     const updated: Record<string, string> = {}
     newPairs.forEach(([k, v]) => {
         if (k) updated[k] = v
     })
-    Object.keys(props.variables).forEach(k => delete props.variables[k])
-    Object.assign(props.variables, updated)
-    console.log('Updated variables:', props.variables)
+    Object.keys(flowVariables.value).forEach(k => delete flowVariables.value[k])
+    Object.assign(flowVariables.value, updated)
+    console.log('Updated variables:', flowVariables.value)
 }, { deep: true })
 
 const suggestions = computed(() =>
-    (props.inputs || []).map(input => `{{ inputs.${input.name} }}`)
+    (flowInputs.value || []).map(input => `{{ inputs.${input.name} }}`)
 )
 
 function filteredSuggestions(value: string) {

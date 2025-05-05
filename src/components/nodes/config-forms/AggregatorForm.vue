@@ -56,11 +56,11 @@ watch(
     (newData) => {
         localData.value = { ...newData }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 )
 
 const emit = defineEmits<{
-    (e: 'update', data: any): void
+    (e: 'update:config', data: any): void
 }>()
 
 const strategy = ref(localData.value.strategy || 'none')
@@ -80,7 +80,7 @@ function submit() {
         localData.value.strategy = strategy.value
         localData.value.template = JSON.parse(templateJson.value || '{}')
         localData.value.outputs_schema = outputsSchema.value
-        emit('update', localData.value)
+        emit('update:config', localData.value)
     } catch (e) {
         window.$message?.error?.('请检查模板 JSON 格式是否正确:')
     }

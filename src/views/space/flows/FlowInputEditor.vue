@@ -1,6 +1,6 @@
 <template>
     <div class="p-4 space-y-4">
-        <div v-for="(input, index) in inputs" :key="index" class="p-4 border rounded space-y-0">
+        <div v-for="(input, index) in flowInputs" :key="index" class="p-4 border rounded space-y-0">
 
             <n-form-item label="名称" label-placement="left" label-width="80px" class="flex-1"
                 :feedback="!isValidName(input.name) ? '变量名必须以字母或下划线开头，仅可包含字母、数字和下划线' : ''"
@@ -24,7 +24,7 @@
             <n-form-item label="必填" label-placement="left" label-width="80px">
                 <n-switch v-model:value="input.required" />
             </n-form-item>
-            <n-form-item v-if="input.type === 'select'" label="下拉选项" label-placement="left" label-width="80px">
+            <n-form-item v-if="input.type === 'select' && input.options" label="下拉选项" label-placement="left" label-width="80px">
                 <div class="space-y-2 w-full">
                     <div v-for="(option, optIndex) in input.options" :key="optIndex"
                         class="flex items-center space-x-2">
@@ -43,24 +43,16 @@
 
 <script setup lang="ts">
 import { NFormItem, NInput, NSelect, NSwitch, NButton } from 'naive-ui'
-
-const props = defineProps<{
-    inputs: Array<any>
-}>()
+import { useFlowStore } from '@/store/flow'
+import { storeToRefs } from 'pinia'
 
 
-interface Input {
-    name: string;
-    label: string;
-    type: string;
-    required: boolean;
-    options: string[];
-}
 
-const inputs = props.inputs
+const flowStore = useFlowStore()
+const { inputs: flowInputs } = storeToRefs(flowStore)
 
 function addInput() {
-    inputs.push({
+    flowInputs.value.push({
         name: '',
         label: '',
         type: 'string',
@@ -70,22 +62,28 @@ function addInput() {
 }
 
 function removeInput(index: number) {
-    inputs.splice(index, 1)
+    flowInputs.value.splice(index, 1)
 }
 
-function addOption(input: Input) {
+import type { InputFieldConfig } from '@/store/flow'
+
+function addOption(input: InputFieldConfig) {
+    input.options = input.options || []
     input.options.push('')
 }
 
-function removeOption(input: Input, index: number) {
-    input.options.splice(index, 1)
+function removeOption(input: InputFieldConfig, index: number) {
+    if (input.options) {
+        input.options.splice(index, 1)
+    }
 }
 
 function isValidName(name: string): boolean {
     return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)
 }
 
-function isLabelValid(label: string): boolean {
+function isLabelValid(label?: string): boolean {
+    if (!label) return true
     const isChinese = /[\u4e00-\u9fa5]/.test(label)
     if (isChinese) {
         return label.length <= 20

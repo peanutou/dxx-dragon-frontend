@@ -1,20 +1,15 @@
 <template>
     <n-input ref="inputRef" v-model:value="modelValue" v-bind="$attrs" @keydown="handleKeydown" @keyup="handleKeyup" />
-    <div v-if="suggestionState.show" class="suggestion-popup"
-        style="position: absolute; background: white; border: 1px solid #ccc; padding: 4px; z-index: 10;">
-        <div v-for="(s, i) in suggestionState.suggestions" :key="s" class="suggestion-item" :style="{
-            padding: '2px 4px',
-            cursor: 'pointer',
-            background: suggestionState.activeIndex === i ? '#eef' : 'white'
-        }" @mousedown.prevent="selectSuggestion(s)">
+    <div v-if="suggestionState.show" class="suggestion-popup" :style="popupStyle">
+        <div v-for="(s, i) in suggestionState.suggestions" :key="s" class="suggestion-item" :style="getItemStyle(i)" @mousedown.prevent="selectSuggestion(s)">
             {{ s }}
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { NInput } from 'naive-ui'
-import { ref, reactive, watch } from 'vue'
+import { NInput, useThemeVars } from 'naive-ui'
+import { ref, reactive, watch, computed, type CSSProperties } from 'vue'
 import { useFlowStore } from '@/store/flow'
 
 const modelValue = defineModel<string>()
@@ -40,6 +35,26 @@ watch(
     { immediate: true, deep: true }
 )
 
+const themeVars = useThemeVars()
+
+const popupStyle = computed(() => ({
+  position: 'absolute',
+  border: '1px solid #ccc',
+  padding: '4px',
+  zIndex: 10,
+  backgroundColor: themeVars.value.bodyColor,
+  color: themeVars.value.textColor1,
+} as CSSProperties))
+
+const getItemStyle = (index: number) => ({
+  padding: '2px 4px',
+  cursor: 'pointer',
+  background: suggestionState.activeIndex === index
+    ? themeVars.value.primaryColor
+    : themeVars.value.bodyColor,
+  color: themeVars.value.textColor1,
+})
+
 function getInputElement() {
     const inputType = inputRef.value?.type
     if (!inputType) {
@@ -62,8 +77,6 @@ function selectSuggestion(suggestion: string) {
     const text = modelValue.value || ''
     const insertion = suggestion + '}}'
     modelValue.value = text.slice(0, cursor) + insertion + text.slice(cursor)
-    console.log('🎯 Inserted suggestion:', suggestion, 'at:', cursor)
-    console.log('🎯 Updated modelValue:', modelValue.value)
     suggestionState.show = false
 }
 

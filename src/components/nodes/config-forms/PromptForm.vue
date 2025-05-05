@@ -55,7 +55,7 @@ const props = defineProps<{
 const localData = ref<any>({})
 const showModal = ref(false)
 const emit = defineEmits<{
-    (e: 'update', data: any): void
+    (e: 'update:config', data: any): void
 }>()
 
 watch(
@@ -73,10 +73,10 @@ watch(
             ...(newData || {}),
         }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 )
 
 const submit = () => {
-    emit('update', localData.value)
+    emit('update:config', localData.value)
 }
 </script>

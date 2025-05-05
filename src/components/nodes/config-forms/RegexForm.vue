@@ -42,11 +42,11 @@ watch(
     (newData) => {
         localData.value = { ...newData }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 )
 
 const emit = defineEmits<{
-  (e: 'update', data: any): void
+  (e: 'update:config', data: any): void
 }>()
 
 watch(() => props.node.data, (newData) => {
@@ -54,6 +54,6 @@ watch(() => props.node.data, (newData) => {
 })
 
 function submit() {
-  emit('update', localData.value)
+  emit('update:config', localData.value)
 }
 </script>

@@ -4,6 +4,7 @@
         :selected="props.selected"
         @run="handleRunClick"
         :show-run-button="true"
+        :left-handles="2"
     >
         <NodeName :title="getNodeCapitalizedType(props?.data?.type)" :data="props.data" />
     </NodeLayout>
