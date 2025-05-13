@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '@/utils/axios'
 import { useUserStore } from '@/store/user'
@@ -35,6 +35,10 @@ const loading = ref(false)
 const form = ref({
     email: '',
     password: ''
+})
+
+onMounted(() => {
+    console.log('Login component mounted')
 })
 
 const rules = {

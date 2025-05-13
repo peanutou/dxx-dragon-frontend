@@ -1,3 +1,4 @@
+import { time } from 'console'
 import { defineStore } from 'pinia'
 
 /********** Flow Inputs **********/
@@ -82,6 +83,10 @@ export interface FlowMeta {
 
 /********** Flow Store **********/
 
+export enum SnapshotReason {
+    INITIAL = 'INITIAL',
+}
+
 export const useFlowStore = defineStore('flow', {
     state: () => ({
         nodes: [] as BaseNodeConfig[],
@@ -112,9 +117,38 @@ export const useFlowStore = defineStore('flow', {
         }>,
         hasChanges: false as boolean,
         currentTestNode: null as BaseNodeConfig | null,  // added for test node storage
+        lastSnapshot: null as {
+            nodes: any[]
+            edges: any[]
+            inputs: any[]
+            variables: Record<string, any>
+            meta: Record<string, any>
+        } | null,
     }),
 
     actions: {
+        /**
+         * Reset all flow state fields to their initial values.
+         */
+        resetFlowState() {
+            this.nodes = []
+            this.edges = []
+            this.inputs = []
+            this.variables = {}
+            this.meta = {
+                frontend: {
+                    viewport: { x: 0, y: 0, zoom: 1 },
+                    edges: []
+                }
+            }
+            this.messages = []
+            this.undoStack = []
+            this.redoStack = []
+            this.hasChanges = false
+            this.currentTestNode = null
+            this.lastSnapshot = null
+        },
+        
         setFlowState(payload: {
             nodes?: any[]
             edges?: any[]
@@ -140,15 +174,30 @@ export const useFlowStore = defineStore('flow', {
         },
 
         // Save a snapshot of the current state and clear redoStack
-        snapshot() {
-            const snapshot = {
+        snapshot(reason?: SnapshotReason) {
+            if (reason === SnapshotReason.INITIAL) {
+                this.lastSnapshot = {
+                    nodes: JSON.parse(JSON.stringify(this.nodes)),
+                    edges: JSON.parse(JSON.stringify(this.edges)),
+                    inputs: JSON.parse(JSON.stringify(this.inputs)),
+                    variables: JSON.parse(JSON.stringify(this.variables)),
+                    meta: JSON.parse(JSON.stringify(this.meta)),
+                }
+                return
+            }
+            if (this.lastSnapshot !== null) {
+                this.undoStack.push(this.lastSnapshot)
+            } else {
+                console.log('No last snapshot to push to undoStack')
+                return
+            }
+            this.lastSnapshot = {
                 nodes: JSON.parse(JSON.stringify(this.nodes)),
                 edges: JSON.parse(JSON.stringify(this.edges)),
                 inputs: JSON.parse(JSON.stringify(this.inputs)),
                 variables: JSON.parse(JSON.stringify(this.variables)),
                 meta: JSON.parse(JSON.stringify(this.meta)),
             }
-            this.undoStack.push(snapshot)
             // Limit stack size
             if (this.undoStack.length > 50) {
                 this.undoStack.shift()
@@ -168,10 +217,10 @@ export const useFlowStore = defineStore('flow', {
                 meta: JSON.parse(JSON.stringify(this.meta)),
             }
             this.redoStack.push(current)
-            const last = this.undoStack.pop()
-            if (last) {
+            this.lastSnapshot = this.undoStack.pop() || null
+            if (this.lastSnapshot) {
                 // Restore all fields
-                this.setFlowState(last)
+                this.setFlowState(this.lastSnapshot)
             }
             if (this.undoStack.length === 0) {
                 this.hasChanges = false
@@ -191,6 +240,7 @@ export const useFlowStore = defineStore('flow', {
             this.undoStack.push(current)
             const next = this.redoStack.pop()
             if (next) {
+                this.lastSnapshot = next
                 this.setFlowState(next)
                 this.hasChanges = true
             }
@@ -321,6 +371,7 @@ export const useFlowStore = defineStore('flow', {
         initializeFromFlowEntity(flowEntity: any) {
             if (!flowEntity?.config) return
 
+            this.lastSnapshot = null
             const config = flowEntity.config
 
             if (Array.isArray(config.nodes)) {
@@ -355,6 +406,10 @@ export const useFlowStore = defineStore('flow', {
 
             // Load edges if available
             this.loadEdgesFromMeta()
+            setTimeout(() => {
+                this.snapshot(SnapshotReason.INITIAL)
+            }, 100)
         },
     }
 })
+

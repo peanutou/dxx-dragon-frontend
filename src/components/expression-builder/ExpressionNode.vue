@@ -2,15 +2,17 @@
     <div class="expr-node">
         <!-- Basic expression -->
         <template v-if="expr.kind === 'basic'">
-            <n-grid cols="24" x-gap="12" align="center">
-                <n-gi :span="11">
-                    <OperandPicker v-model="expr.left" :keys="targetKeys" label="Target Field" source="target" />
+            <n-grid cols="24" x-gap="12" y-gap="12" class="basic-expr">
+                <n-gi :span="10">
+                    <OperandPicker v-model="expr.left" :column-keys="columnKeys" :variable-names="variableNames"
+                        label="Expression" source="value" />
                 </n-gi>
-                <n-gi :span="2">
+                <n-gi :span="4">
                     <OperatorPicker v-model="expr.op" />
                 </n-gi>
-                <n-gi :span="11">
-                    <OperandPicker v-model="expr.right" :keys="inputKeys" label="Input Field" source="input" />
+                <n-gi :span="10">
+                    <OperandPicker v-model="expr.right" :variable-names="variableNames" :column-keys="columnKeys"
+                        label="Expression" source="value" />
                 </n-gi>
             </n-grid>
         </template>
@@ -21,30 +23,23 @@
                 <option value="and">AND</option>
                 <option value="or">OR</option>
             </select>
-            <ExpressionNode
-                v-for="(child, index) in expr.children"
-                :key="index"
-                :parent="expr"
-                v-model="expr.children[index]"
-                :target-keys="targetKeys"
-                :input-keys="inputKeys"
-                :variable-names="variableNames"
-                @update:expression="$emit('update:expression', $event)"
-            />
+            <ExpressionNode v-for="(child, index) in expr.children" :key="child.id" :parent="expr"
+                v-model="expr.children[index]" :column-keys="columnKeys" :variable-names="variableNames"
+                @update:expression="$emit('update:expression', $event)" />
         </template>
 
         <!-- Controls -->
         <div class="expr-controls">
             <n-button v-if="modelValue.kind != 'basic'" type="primary" size="tiny" @click="addBasic">+ Basic</n-button>
-            <n-button v-if="modelValue.kind != 'basic'" type="primary" size="tiny" @click="addComposite">+ Composite</n-button>
+            <n-button v-if="modelValue.kind != 'basic'" type="primary" size="tiny" @click="addComposite">+
+                Composite</n-button>
             <n-button v-if="parent" type="warning" size="tiny" @click="removeNode">– Remove</n-button>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
-import { NSpace, NGrid, NGi, pProps, NButton } from 'naive-ui'
+import { NGrid, NGi, NButton } from 'naive-ui'
 import ExpressionNode from './ExpressionNode.vue'
 import OperandPicker from './OperandPicker.vue'
 import OperatorPicker from './OperatorPicker.vue'
@@ -53,11 +48,10 @@ import type { Expression } from './types'
 const props = defineProps<{
     parent: Expression | null
     modelValue: Expression
-    targetKeys: string[]
-    inputKeys: string[]
+    columnKeys: string[]
     variableNames: string[]
 }>()
-
+const expr = props.modelValue as Expression
 const emit = defineEmits<{
     (e: 'update:expression', payload: {
         action: 'add-basic' | 'add-composite' | 'remove',
@@ -67,13 +61,6 @@ const emit = defineEmits<{
     (e: 'update:modelValue', value: Expression): void
 }>()
 
-const expr = props.modelValue as Expression
-
-watch(
-    () => expr,
-    (newVal) => emit('update:modelValue', newVal),
-    { deep: true }
-)
 
 function addBasic() {
     emit('update:expression', {
@@ -102,8 +89,9 @@ function removeNode() {
 
 <style scoped>
 .expr-node {
-    width: 100%;
+    flex-grow: 1;
     border: 1px solid #ccc;
+    box-sizing: border-box;
     padding: 8px;
     margin: 4px;
 }
@@ -118,7 +106,6 @@ function removeNode() {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    align-items: center;
     width: 100%;
 }
 </style>

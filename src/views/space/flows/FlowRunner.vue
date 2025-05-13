@@ -1,9 +1,9 @@
 <template>
-    <n-layout has-sider style="height: 100vh; border: 1px solid lightgrey;">
+    <n-layout has-sider style="height: 100%; border: 1px solid lightgrey;">
         <!-- 左边内容 -->
         <div style="width: 50%; border-right: 1px solid #eee;">
-            <n-card v-if="flowDefinition" :title="flowDefinition.name" :description="`版本：${flowDefinition.version}`"
-                size="small" class="h-full w-full" style="overflow-y: auto;">
+            <n-card v-if="flowDefinition" :title="flowDefinition.name" size="small" class="h-full w-full"
+                style="overflow-y: auto;">
                 <template #header-extra>
                     <div class="flex items-center space-x-2">
                         <n-tooltip trigger="hover">
@@ -14,6 +14,7 @@
                             <span>复制</span>
                         </n-tooltip>
                         <n-tag size="small" type="info">{{ flowDefinition.status }}</n-tag>
+                        <n-tag size="small" type="info">{{ `版本：${flowDefinition.version}` }}</n-tag>
                     </div>
                 </template>
                 <template #default>
@@ -28,12 +29,9 @@
                             </n-select>
                         </n-form-item>
                         <!-- Seperator -->
-                        <n-divider title-placement="center" style="margin-top: 0px; font-size: 12px;">输入数据</n-divider>
+                        <n-divider title-placement="center" style="margin-top: 0px; font-size: 12px;">全局输入</n-divider>
                         <FlowInputs v-if="flowDefinition" :inputs="flowDefinition?.config?.inputs || []"
                             v-model:inputValues="inputValues" />
-                        <n-form-item class="flex flex-col items-start space-y-2">
-                            <n-button type="primary" @click="handleRun" :loading="loading">运行</n-button>
-                        </n-form-item>
                     </n-form>
                     <!-- execute result: outputs.trace -->
                     <n-button v-if="output?.outputs?.trace" type="warning" size="small">
@@ -46,6 +44,9 @@
                     <!-- execute result: nodes trace -->
                     <n-data-table v-if="output?.debug_info?.flow_config?.nodes" :columns="traceColumns"
                         :data="output.debug_info.flow_config.nodes" size="small" class="mt-4 text-xs" />
+                </template>
+                <template #action>
+                    <n-button type="primary" @click="handleRun" :loading="loading">运行</n-button>
                 </template>
             </n-card>
         </div>
@@ -69,17 +70,16 @@ import { TenantSpaceAPI } from '@/apis/endpoints'
 import FlowInputs from '@/components/flows/FlowInputs.vue'
 
 
+const props = defineProps<{ flowId: string, debugMode?: boolean, testMode?: boolean }>()
 const route = useRoute()
-const flowId = route.params.id as string
+const flowId = props.flowId || route.params.flowId as string
+const debugMode = props.debugMode ?? false
+const testMode = props.testMode ?? false
 const inputValues = ref<Record<string, any>>({})
 const loading = ref(false)
 const output = ref<any>(null)
 const flowDefinition = ref<any>(null)
 const selectedRunId = ref('')
-
-const props = defineProps<{ debugMode?: boolean, testMode?: boolean }>()
-const debugMode = props.debugMode ?? false
-const testMode = props.testMode ?? false
 
 // traceColumns for node trace info
 const traceColumns = [

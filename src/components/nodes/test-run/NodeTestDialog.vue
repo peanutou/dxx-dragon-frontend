@@ -1,51 +1,84 @@
 <template>
-    <n-modal v-model:show="visible" title="测试运行" preset="dialog" style="width: 80%; max-height: 80vw">
-        <n-form>
-            <!-- 动态渲染模拟上下文输入字段 -->
-            <FlowInputs :inputs="flowSnapshot.inputs || []"
-                :input-values="props.nodeData.test_inputs.mock_flow_inputs" />
-            <!-- 保留原始 mock_upstream 输入区域 -->
-            <n-form-item v-for="node in props.nodeData.depends_on || []" :key="node" :label="`模拟输出：${node}`"
-                :path="node">
-                <n-input type="textarea" v-model:value="props.nodeData.test_inputs.mock_upstream[node]"
-                    placeholder="请输入 JSON 格式依赖节点输出" />
-            </n-form-item>
-        </n-form>
-        <n-space vertical>
-            <n-layout has-sider>
-                <n-layout-sider bordered collapse-mode="width" :collapsed-width="64" :width="240" :collapsed="collapsed"
-                    show-trigger @collapse="collapsed = true" @expand="collapsed = false">
-                    <n-menu :collapsed="collapsed" :collapsed-width="64" :collapsed-icon-size="22"
-                        :options="menuOptions" :render-label="renderMenuLabel" :render-icon="renderMenuIcon"
-                        :expand-icon="expandIcon" :default-expanded-keys="defaultExpandedKeys"
-                        @update:value="handleMenuSelect">
-                    </n-menu>
-                </n-layout-sider>
-                <n-layout>
-                    <div v-if="result" style="max-height: 500px;" class="py-2 px-2">
-                        <vue-json-pretty :data="parsedResult" :deep="6" showLength showIcon theme="dark"
-                            @node-click="handleJsonNodeClick" selectableType="single" :highlightSelectedNode="true"
-                            v-model:selectedValue="nodeResultPath" />
+    <n-layout has-sider style="height: 100%; border: 1px solid lightgrey;">
+        <n-layout-sider width="480px" class="border-r-2 border-gray-200">
+            <n-card :bordered="true" size="small" class="h-full w-full" style="overflow-y: auto;"
+                :title="nodeData.name">
+                <template #header-extra>
+                    <div class="flex items-center space-x-2">
+                        <n-tag size="small" type="info">{{ nodeData.type }}</n-tag>
                     </div>
-                </n-layout>
+                </template>
+                <n-thing class="mb-4 flex">
+                    Depends on:
+                    <div class="flex flex-wrap gap-2">
+                        <n-tag v-for="(item, index) in nodeData.depends_on" :key="index" size="small" type="info">{{
+                            item }}</n-tag>
+                    </div>
+                </n-thing>
+                <!-- 动态渲染模拟上下文输入字段 -->
+                <n-divider title-placement="center" style="margin-top: 0px; font-size: 12px;">全局输入</n-divider>
+                <FlowInputs :inputs="flowSnapshot.inputs || []"
+                    :input-values="props.nodeData.test_inputs.mock_flow_inputs" />
+                <!-- 保留原始 mock_upstream 输入区域 -->
+                <n-divider title-placement="center" style="margin-top: 0px; font-size: 12px;">模拟输出</n-divider>
+                <n-form label-placement="top" label-width="280px" :model="props.nodeData.test_inputs.mock_upstream"
+                    class="max-h-[300px] overflow-y-auto">
+                    <n-form-item v-for="node in props.nodeData.depends_on || []" :key="node" :label="`模拟输出：${node}`"
+                        :path="node">
+                        <template #label>
+                            <div class="flex items-center gap-2">
+                                <n-icon :size="16" color="#666">
+                                    <BookmarkOutline />
+                                </n-icon>
+                                <div>模拟输出：{{ node }}</div>
+                            </div>
+                        </template>
+                        <div style="max-height: 150px; overflow-y: auto; width: 100%;">
+                            <vue-json-pretty :data="props.nodeData.test_inputs.mock_upstream[node]" :deep="-1"
+                                showLength showIcon theme="dark" selectableType="single"
+                                :highlightSelectedNode="true" />
+                        </div>
+                        <!-- <n-input type="textarea" v-model:value="props.nodeData.test_inputs.mock_upstream[node]"
+                        placeholder="请输入 JSON 格式依赖节点输出" />                 -->
+                    </n-form-item>
+                </n-form>
+                <template #action>
+                    <n-button type="primary" @click="handleRun" :loading="loading">运行</n-button>
+                </template>
+            </n-card>
+        </n-layout-sider>
+        <n-layout>
+            <!-- Menu -->
+            <n-layout-header bordered class="pt-1 h-[48px]">
+                <n-menu mode="horizontal" :options="menuOptions" @update:value="handleMenuSelect" />
+            </n-layout-header>
+            <!-- JSON View -->
+            <n-layout v-if="currentSelectedView === 'data-view-json'"
+                style="overflow-y: auto; height: calc(100% - 48px);">
+                <vue-json-pretty :data="parsedResult" :deep="6" showLength showIcon theme="dark"
+                    @node-click="handleJsonNodeClick" selectableType="single" :highlightSelectedNode="true"
+                    v-model:selectedValue="nodeResultPath" class="p-4" />
+
             </n-layout>
-        </n-space>
-        <template #action>
-            <n-button type="primary" @click="handleRun" :loading="loading">运行</n-button>
-            <n-button @click="visible = false">关闭</n-button>
-        </template>
-    </n-modal>
+            <!-- Pretty Preview -->
+            <n-layout v-else-if="currentSelectedView === 'data-view-preview'"
+                style="overflow-y: auto; height: calc(100% - 48px);">
+                <NodeResultPreview :data="parsedResult" />
+            </n-layout>
+        </n-layout>
+    </n-layout>
 </template>
 
 <script setup lang="ts">
+import NodeResultPreview from '@/components/nodes/test-run/NodeResultPreview.vue'
+import VueJsonPretty from 'vue-json-pretty'
 import { TenantSpaceAPI } from '@/apis/endpoints'
-import { NModal, NFormItem, NInput, NMenu, pProps } from 'naive-ui'
+import { NCard, NFormItem, NInput, NTag, NMenu, NButton, NSplit } from 'naive-ui'
 import { ref, computed, watch, h } from 'vue'
 import request from '@/utils/axios'
 import { useRoute } from 'vue-router'
 import { useFlowStore } from '@/store/flow'
 import FlowInputs from '@/components/flows/FlowInputs.vue'
-import VueJsonPretty from 'vue-json-pretty'
 import schematize from '@/utils/schematize'
 import type { MenuOption } from 'naive-ui'
 import type { Component } from 'vue'
@@ -56,20 +89,18 @@ import {
     ConstructOutline as ConstructIcon,
     BookmarkOutline,
     CaretDownOutline,
+    DiscOutline,
 } from '@vicons/ionicons5'
 import { NIcon } from 'naive-ui'
 
+const props = defineProps<{ nodeData: any }>()
+const emit = defineEmits(['update:schema', 'update:save-test', 'update:clear-test'])
 const route = useRoute()
-const collapsed = ref(true)
-const defaultExpandedKeys = ref(['data-processing-tools', 'people', 'beverage'])
-const visible = defineModel<boolean>('show')
-const props = defineProps<{
-    nodeData: any
-}>()
 const result = ref<string | null>(null)
 const flowSnapshot = ref<any>({})
 const flowStore = useFlowStore()
 const loading = ref(false)
+const currentSelectedView = ref('data-view-preview')
 const nodeResultPath = ref('');
 const parsedResult = computed(() => {
     try {
@@ -84,34 +115,10 @@ const nodeSchema = computed(() => {
     )
 })
 
-function expandIcon() {
-    return h(NIcon, null, { default: () => h(CaretDownOutline) })
-}
-
-function renderMenuLabel(option: MenuOption) {
-    if ('href' in option) {
-        return h('a', { href: option.href, target: '_blank' }, [
-            option.label as string
-        ])
-    }
-    return option.label as string
-}
-
-function renderMenuIcon(option: MenuOption) {
-    // return render placeholder for indent
-    if (option.key === 'sheep-man')
-        return true
-    // return falsy, don't render icon placeholder
-    if (option.key === 'food')
-        return null
-    return h(NIcon, null, { default: () => h(ConstructIcon) })
-}
-
 function renderIcon(icon: Component) {
     return () => h(NIcon, null, { default: () => h(icon) })
 }
 
-const emit = defineEmits(['update:schema', 'update:save-test', 'update:clear-test'])
 const menuOptions: MenuOption[] = [
     {
         label: '数据处理工具',
@@ -126,7 +133,7 @@ const menuOptions: MenuOption[] = [
                     {
                         label: '更新 Schema',
                         key: 'generate-schema',
-                        icon: renderIcon(PersonIcon)
+                        icon: renderIcon(BookIcon)
                     },
                 ]
             },
@@ -154,6 +161,23 @@ const menuOptions: MenuOption[] = [
             // }
         ]
     },
+    {
+        label: '视图',
+        key: 'data-view-tools',
+        icon: renderIcon(DiscOutline),
+        children: [
+            {
+                label: 'JSON 视图',
+                key: 'data-view-json',
+                icon: renderIcon(DiscOutline),
+            },
+            {
+                label: 'Preview 视图',
+                key: 'data-view-preview',
+                icon: renderIcon(DiscOutline),
+            },
+        ]
+    }
 ]
 
 function handleMenuSelect(selectedKeys: string | string[]) {
@@ -165,6 +189,7 @@ function handleMenuSelect(selectedKeys: string | string[]) {
         emit('update:schema', nodeSchema.value)
     }
     if (selectedKey === 'save-test') {
+        emit('update:schema', nodeSchema.value)
         emit('update:save-test', {
             test_inputs: props.nodeData.test_inputs,
             debug_info: parsedResult.value?.data?.node.debug_info,
@@ -175,7 +200,12 @@ function handleMenuSelect(selectedKeys: string | string[]) {
         result.value = null
         emit('update:clear-test', {})
     }
-
+    if (selectedKey === 'data-view-json') {
+        currentSelectedView.value = 'data-view-json'
+    }
+    if (selectedKey === 'data-view-preview') {
+        currentSelectedView.value = 'data-view-preview'
+    }
 }
 
 async function handleRun() {
@@ -219,25 +249,50 @@ function getValueByPath(obj: any, path: string): any {
     return keys.reduce((acc, key) => (acc && acc[key] !== undefined) ? acc[key] : undefined, obj);
 }
 
-function initializeTestData(node: any) {
-    if (!node) return
+function initializeTestData(nodeData: any) {
+    if (!nodeData) return
     result.value = null
-    if (node.outputs) {
+    if (nodeData.outputs) {
         result.value = JSON.stringify({
-            data: node
+            data: {
+                node: nodeData
+            }
         })
     } else {
-        node.test_inputs = {}
+        nodeData.test_inputs = {}
     }
     nodeResultPath.value = 'root.data.node.outputs.result'
     flowSnapshot.value = flowStore.getFlowState()
 
     // Ensure test_inputs and mock_flow_inputs are initialized
-    if (!node.test_inputs || typeof node.test_inputs !== 'object') {
-        node.test_inputs = {}
+    if (!nodeData.test_inputs || typeof nodeData.test_inputs !== 'object') {
+        nodeData.test_inputs = {}
     }
-    if (!node.test_inputs.mock_flow_inputs || typeof node.test_inputs.mock_flow_inputs !== 'object') {
-        node.test_inputs.mock_flow_inputs = {}
+    if (!nodeData.test_inputs.mock_flow_inputs || typeof nodeData.test_inputs.mock_flow_inputs !== 'object') {
+        nodeData.test_inputs.mock_flow_inputs = {}
+        nodeData.test_inputs.mock_upstream = {}
+    }
+    // Ensure mock_upstream is initialized
+    if (!nodeData.test_inputs.mock_upstream || typeof nodeData.test_inputs.mock_upstream !== 'object') {
+        nodeData.test_inputs.mock_upstream = {}
+    }
+
+    // 根据 node.depends_on 自动填充 mock_upstream
+    if (Array.isArray(nodeData.depends_on)) {
+        const targetId = nodeData.frontend.id
+        const incoming = flowStore.edges.filter(e => e.target === targetId)
+        const upstreamNodes = incoming.map(e => {
+            const src = flowStore.nodes.find(n => n.id === e.source)
+            return src?.data.outputs_schema
+                ? { label: src.data.name, value: src.data.outputs?.result ?? null }
+                : null
+        })
+        for (const node of upstreamNodes) {
+            if (node && node.value) {
+                // nodeData.test_inputs.mock_upstream[node.label] = JSON.stringify(node.value, null, 4)
+                nodeData.test_inputs.mock_upstream[node.label] = node.value
+            }
+        }
     }
 }
 

@@ -49,7 +49,7 @@
                         删除选中角色
                     </n-button>
                 </n-space>
-                <div class="flex items-center justify-end gap-2 pt-2">
+                <div class="flex items-center justify-end gap-2">
                     <n-checkbox v-model:checked="showSystemRoles" size="small">
                         显示系统角色
                     </n-checkbox>
@@ -64,7 +64,7 @@
         </div>
         <n-data-table :columns="columns" :data="roles" :loading="loading" :pagination="pagination"
             :on-update:sorter="handleSortChange" :row-key="row => row.role_id" remote
-            v-model:checked-row-keys="selectedRowKeys" />
+            v-model:checked-row-keys="selectedRowKeys"/>
     </n-card>
 </template>
 

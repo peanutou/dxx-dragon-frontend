@@ -9,6 +9,7 @@ export const ROUTE = {
         ROLES: '/space/settings/roles',
         FLOWS: {
             LIST: '/space/flows',
-        }
+        },
+        CHAT: '/space/chat',
     }
 }

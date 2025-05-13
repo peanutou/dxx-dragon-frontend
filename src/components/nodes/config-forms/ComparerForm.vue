@@ -22,17 +22,29 @@
             <n-dynamic-input v-model:value="localData.rules" item-style="margin-bottom: 8px;" :on-create="() => ({
                 mode: ComparisonMode.INDIVIDUAL,
                 expression: '',
-                exprObj: createDefaultExpression(),
-            })">
+            })" show-sort-button>
                 <template #default="{ value: rule, index }">
                     <n-space vertical :size="12">
                         <n-select v-model:value="rule.mode" :options="[
                             { label: 'Individual', value: 'individual' },
+                            { label: 'Individual Group', value: 'individual_group' },
                             { label: 'Group', value: 'group' },
                         ]" placeholder="选择运行模式" />
-                        <div class="flex gap-2">
+                        <div v-if="rule.mode === 'individual' || rule.mode === 'individual_group'" class="flex gap-2">
                             <n-input v-model:value="rule.expression" placeholder="Expression" />
-                            <n-button text type="primary" @click="() => { onEdit(index) }">编辑</n-button>
+                            <n-button text type="primary" @click="() => { onEdit(index, 'expression') }">编辑</n-button>
+                        </div>
+                        <div v-else-if="rule.mode === 'group'" class="flex flex-col gap-2">
+                            <div class="flex gap-2">
+                                <n-input v-model:value="rule.target_expression" placeholder="Target Expression" />
+                                <n-button text type="primary"
+                                    @click="() => { onEdit(index, 'target_expression') }">编辑</n-button>
+                            </div>
+                            <div class="flex gap-2">
+                                <n-input v-model:value="rule.input_expression" placeholder="Input Expression" />
+                                <n-button text type="primary"
+                                    @click="() => { onEdit(index, 'input_expression') }">编辑</n-button>
+                            </div>
                         </div>
                     </n-space>
                 </template>
@@ -48,8 +60,16 @@
 
     <!-- ExpressionBuilder modal -->
     <n-modal v-model:show="showExprBuilder" title="Expression Builder" preset="dialog" style="width: 80%;">
-        <ExpressionBuilder v-model="currentExpr" :target-keys="getTableKeys(localData.target_table)"
-            :input-keys="getTableKeys(localData.input_table)" :variable-names="Object.keys(flowStore.variables)" />
+        <ExpressionBuilder v-model="currentExpr" :column-keys="(() => {
+            if (currentExprKey === 'expression') {
+                return getAllTableKeys()
+            } else if (currentExprKey === 'target_expression') {
+                return getTableKeys(localData.target_table)
+            } else if (currentExprKey === 'input_expression') {
+                return getTableKeys(localData.input_table)
+            }
+            return []
+        })()" :variable-names="Object.keys(flowStore.variables)" />
         <template #action>
             <n-button type="primary" @click="onModalClose">保存表达式</n-button>
         </template>
@@ -63,7 +83,6 @@ import { watch, computed, reactive, ref } from 'vue'
 import { useFlowStore } from '@/store/flow'
 import SchemaInput from '@/components/shared/SchemaInput.vue'
 import ExpressionBuilder from '@/components/expression-builder/ExpressionBuilder.vue'
-import type { Expression } from '@/components/expression-builder/types'
 
 // Comparison mode mirror of backend enum
 enum ComparisonMode {
@@ -79,16 +98,9 @@ interface ComparerNodeConfig /* extends BaseNodeConfig */ {
     rules: {
         mode: ComparisonMode
         expression: string
-        exprObj: Expression
+        target_expression: string
+        input_expression: string
     }[]
-}
-
-function createDefaultExpression(): Expression {
-    return {
-        kind: 'composite',
-        operator: 'and',
-        children: [],
-    }
 }
 
 const props = defineProps<{
@@ -104,27 +116,28 @@ const props = defineProps<{
 const localData = reactive({ ...props.node.data })
 const showExprBuilder = ref(false)
 const currentExprIndex = ref<number>()
-const currentExpr = ref<Expression>(createDefaultExpression())
+const currentExpr = ref<string>('')
+const currentExprKey = ref<'expression' | 'target_expression' | 'input_expression'>('expression')
 
 const emit = defineEmits<{
     (e: 'update:config', data: typeof props.node.data): void
 }>()
 
 
-function onEdit(index: number) {
+function onEdit(index: number, key: 'expression' | 'target_expression' | 'input_expression' = 'expression') {
     currentExprIndex.value = index
-    if (localData.rules[index].exprObj) {
-        currentExpr.value = localData.rules[index].exprObj
-    } else {
-        currentExpr.value = createDefaultExpression()
-    }
+    currentExprKey.value = key
+    currentExpr.value = localData.rules[index][key] || ''
     showExprBuilder.value = true
 }
 function onModalClose() {
-    if (currentExprIndex.value !== null && currentExpr.value !== null) {
-        if (currentExprIndex.value !== undefined) {
-            localData.rules[currentExprIndex.value].exprObj = currentExpr.value
-        }
+    if (
+        currentExprIndex.value !== null &&
+        currentExprIndex.value != undefined &&
+        currentExpr.value !== null &&
+        currentExprKey.value
+    ) {
+        localData.rules[currentExprIndex.value][currentExprKey.value] = currentExpr.value
     }
     showExprBuilder.value = false
 }
@@ -146,7 +159,7 @@ const tableOptions = computed(() => {
     return incoming
         .map(e => {
             const src = flowStore.nodes.find(n => n.id === e.source)
-            return src?.data.outputs_schema && (src.data.outputs_schema as any).table
+            return src?.data.outputs_schema && (src.data.outputs_schema as any).__TABLE__
                 ? { label: src.data.name, value: src.data.name }
                 : null
         })
@@ -164,13 +177,28 @@ function submit() {
 function getTableKeys(tableName?: string): string[] {
     if (!tableName) return []
     const node = flowStore.nodes.find(n => n.data.name === tableName)
-    const schema = (node?.data?.outputs_schema as any)?.table
-    console.log(schema && typeof schema === 'object' && !Array.isArray(schema)
-        ? Object.keys(schema)
-        : [])
-    return schema && typeof schema === 'object' && !Array.isArray(schema)
-        ? Object.keys(schema)
-        : []
+    const schema = (node?.data?.outputs_schema as any)?.__TABLE__
+    const keys: string[] = []
+    if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
+        for (const key of Object.keys(schema)) {
+            keys.push(`${tableName}.${key}`)
+        }
+    }
+    return keys
+}
+
+function getAllTableKeys(): string[] {
+    const keys: string[] = []
+    for (const option of tableOptions.value) {
+        const node = flowStore.nodes.find(n => n.data.name === option.value)
+        const schema = (node?.data?.outputs_schema as any)?.__TABLE__
+        if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
+            for (const key of Object.keys(schema)) {
+                keys.push(`${option.value}.${key}`)
+            }
+        }
+    }
+    return keys
 }
 
 </script>

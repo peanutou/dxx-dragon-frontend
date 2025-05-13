@@ -46,7 +46,6 @@
             <n-button type="primary" @click="showModal = false">完成</n-button>
         </template>
     </n-modal>
-
 </template>
 
 <script setup lang="ts">

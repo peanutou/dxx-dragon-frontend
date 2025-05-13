@@ -1,44 +1,31 @@
 <template>
     <div class="expression-builder">
-        <ExpressionNode
-            :parent="null"
-            v-model="expressionTree" 
-            :target-keys="targetKeys" 
-            :input-keys="inputKeys"
-            :variable-names="variableNames"
-            @update:expression="handleExpressionUpdate"
-        />
+        <ExpressionNode :parent="null" v-model="expressionTree" :column-keys="columnKeys"
+            :variable-names="variableNames" @update:expression="handleExpressionUpdate" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { expressionToString, createDefaultExpression, parseExpression } from './composables/useExpressionBuilder'
 import ExpressionNode from './ExpressionNode.vue'
 import type { Expression } from './types'
+import { ref, watch } from 'vue';
 
-// Define props for v-model and data sources
 const props = defineProps<{
-    modelValue: Expression
-    targetKeys: string[]
-    inputKeys: string[]
+    modelValue: string
+    columnKeys: string[]
     variableNames: string[]
 }>()
 
 const emit = defineEmits<{
-    (e: 'update:modelValue', value: Expression): void
-    (e: 'update:expression', payload: {
-        action: 'add-basic' | 'add-composite' | 'remove',
-        path: number[],
-        source: Expression,
-        parent: Expression | null
-    }): void
+    (e: 'update:modelValue', value: string): void
 }>()
 
-// Two-way binding for the expression tree
-const expressionTree = computed<Expression>({
-    get: () => props.modelValue,
-    set: (val) => emit('update:modelValue', val),
-})
+const expressionTree = ref<Expression>(
+    props.modelValue
+        ? parseExpression(props.modelValue)
+        : createDefaultExpression('composite')
+)
 
 function handleExpressionUpdate(payload: {
     action: 'add-basic' | 'add-composite' | 'remove',
@@ -46,25 +33,13 @@ function handleExpressionUpdate(payload: {
     parent: Expression | null
 }) {
     const { action, source, parent } = payload
-    console.log('Action:', action)
     if (action === 'add-basic') {
-        const newExpr: Expression = {
-            kind: 'basic',
-            left: { source: 'value', value: '' },
-            op: 'equal',
-            right: { source: 'value', value: '' }
-        }
         if (source.kind === 'composite') {
-            source.children.push(newExpr)
+            source.children.push(createDefaultExpression('basic'))
         }
     } else if (action === 'add-composite') {
-        const newExpr: Expression = {
-            kind: 'composite',
-            operator: 'and',
-            children: []
-        }
         if (source.kind === 'composite') {
-            source.children.push(newExpr)
+            source.children.push(createDefaultExpression('composite'))
         }
     } else if (action === 'remove') {
         if (parent?.kind === 'composite') {
@@ -74,9 +49,16 @@ function handleExpressionUpdate(payload: {
             }
         }
     }
-
-    emit('update:modelValue', expressionTree.value)
 }
+
+watch(
+    () => expressionTree.value,
+    (newVal) => {
+        emit('update:modelValue', expressionToString(newVal))
+        console.log('Expression String:', expressionToString(expressionTree.value))
+    },
+    { deep: true }
+)
 </script>
 
 <style scoped>

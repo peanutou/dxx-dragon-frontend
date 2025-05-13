@@ -55,13 +55,16 @@
     </n-modal>
     <n-modal v-model:show="showRunnerModal" preset="card" title="流程测试" style="width: 100vw; height: 100vh;"
         :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
-        <FlowRunner :test-mode="true" />
+        <FlowRunner :flow-id="Array.isArray(route.params.id) ? route.params.id[0] : route.params.id" :test-mode="true">
+        </FlowRunner>
     </n-modal>
-    <NodeTestDialog v-model:show="showNodeTestDialog" :node-data="testNodeData"
-        @update:schema="(data) => handleNodeUpdate(data, 'schema')"
-        @update:save-test="(data) => handleNodeUpdate(data, 'test')"
-        @update:clear-test="(data) => handleNodeUpdate(data, 'clear')" />
-</template>©
+    <n-modal v-model:show="showNodeTestDialog" preset="card" title="测试运行" style="width: 100vw; height: 100vh;"
+        :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
+        <NodeTestDialog :node-data="testNodeData" @update:schema="(data) => handleNodeUpdate(data, 'schema')"
+            @update:save-test="(data) => handleNodeUpdate(data, 'test')"
+            @update:clear-test="(data) => handleNodeUpdate(data, 'clear')" />
+    </n-modal>
+</template>
 
 <script setup lang="ts">
 import { TenantSpaceAPI } from '@/apis/endpoints'
@@ -109,12 +112,11 @@ const nodeTypesMap = {
     Comparer: markRaw(ComparerNode),
 }
 const flowStore = useFlowStore()
-const { undoStack, redoStack, hasChanges, inputs, variables } = storeToRefs(flowStore)
+const { undoStack, redoStack, hasChanges, inputs, variables, nodes, edges } = storeToRefs(flowStore)
 // 为了语义清晰，使用 flow* 前缀作为 storeToRefs 的别名
 const flowInputs = inputs
 const flowVariables = variables
 let dragOffset = { x: 0, y: 0 }
-const { nodes, edges } = storeToRefs(flowStore)
 const nodeTypes = ['Prompt', 'HTTP', 'Regex', 'Aggregator', 'Excel', 'Comparer']
 const selectedNode = ref<Record<string, any> | undefined>(undefined)
 // Track if nodes are being dragged
@@ -152,9 +154,8 @@ watch(() => flowStore.currentTestNode, async (node) => {
 // 延迟初始化标记
 const inputsInitialized = ref(false)
 const variablesInitialized = ref(false)
-const nodesInitialized = ref(false)
 const isInitializing = computed(() => {
-    return !inputsInitialized.value || !variablesInitialized.value || !nodesInitialized.value
+    return !inputsInitialized.value || !variablesInitialized.value
 })
 
 watch(flowInputs, () => {
@@ -499,13 +500,14 @@ onMounted(async () => {
             h(NTag, {
                 type: 'default',
                 size: 'small',
-                onClick: () => console.log(undoStack.value.length),
+                onClick: () => console.log(undoStack.value.length, nodes.value),
                 style: ''
             }, { default: () => flowMeta.value.name || '未命名流程' }),
     ])
 })
 
 onUnmounted(async () => {
+    flowStore.resetFlowState()
     navbarStore.clearActions()
 })
 
@@ -695,7 +697,7 @@ function validateConnection(connection: Connection): boolean {
 }
 
 .right-panel {
-    width: 300px;
+    width: 400px;
     /* border-left: 1px solid #eee; */
 }
 

@@ -34,8 +34,8 @@
             <div class="mb-4 space-y-2">
                 <div class="flex justify-between items-center">
                     <n-space>
-                        <n-button type="primary" @click="openCreateModal">添加用户</n-button><n-button type="error"
-                            @click="handleDeleteUsers" :disabled="selectedRowKeys.length === 0">
+                        <n-button type="primary" @click="openCreateModal">添加用户</n-button>
+                        <n-button type="error" @click="handleDeleteUsers" :disabled="selectedRowKeys.length === 0">
                             删除用户
                         </n-button>
                     </n-space>

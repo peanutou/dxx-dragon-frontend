@@ -1,6 +1,6 @@
 <template>
     <n-card title="" size="small" class="h-full w-full" style="overflow-y: auto;">
-        <VueJsonPretty :data="reorderedConfig" :deep="Infinity" showLength showIcon style="font-size: 12px;"/>
+        <VueJsonPretty :data="reorderedConfig" :deep="Infinity" showLength showIcon theme="dark" style="font-size: 12px;"/>
     </n-card>
 </template>
 

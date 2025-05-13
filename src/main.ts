@@ -5,6 +5,8 @@ import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import naive from 'naive-ui'
 import { createDiscreteApi } from 'naive-ui'
+import '@/style.css'
+
 const app = createApp(App)
 const pinia = createPinia()
 

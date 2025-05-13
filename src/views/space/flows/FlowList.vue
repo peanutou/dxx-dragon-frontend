@@ -1,66 +1,67 @@
 <template>
-    <div>
-        <!-- 快速创建流程模态框 -->
-        <n-modal v-model:show="showCreateModal" title="创建流程" preset="dialog">
-            <n-form :model="createForm" ref="formRef" label-width="80">
-                <n-form-item label="名称" path="name" :rule="nameRules">
-                    <n-input v-model:value="createForm.name" placeholder="请输入流程名称" />
-                </n-form-item>
-                <n-form-item label="描述" path="description">
-                    <n-input v-model:value="createForm.description" type="textarea" placeholder="流程描述（可选）" />
-                </n-form-item>
-                <n-form-item label="版本" path="version">
-                    <n-input v-model:value="createForm.version" placeholder="由后台初始化" disabled />
-                </n-form-item>
-            </n-form>
-            <template #action>
-                <n-button @click="showCreateModal = false">取消</n-button>
-                <n-button type="primary" @click="submitCreate">创建</n-button>
-            </template>
-        </n-modal>
+    <!-- 快速创建流程模态框 -->
+    <n-modal v-model:show="showCreateModal" title="创建流程" preset="dialog">
+        <n-form :model="createForm" ref="formRef" label-width="80">
+            <n-form-item label="名称" path="name" :rule="nameRules">
+                <n-input v-model:value="createForm.name" placeholder="请输入流程名称" />
+            </n-form-item>
+            <n-form-item label="描述" path="description">
+                <n-input v-model:value="createForm.description" type="textarea" placeholder="流程描述（可选）" />
+            </n-form-item>
+            <n-form-item label="版本" path="version">
+                <n-input v-model:value="createForm.version" placeholder="由后台初始化" disabled />
+            </n-form-item>
+        </n-form>
+        <template #action>
+            <n-button @click="showCreateModal = false">取消</n-button>
+            <n-button type="primary" @click="submitCreate">创建</n-button>
+        </template>
+    </n-modal>
 
-        <n-modal v-model:show="showEditModal" title="编辑流程" preset="dialog">
-            <n-form :model="editForm" label-width="80">
-                <n-form-item label="名称" path="name" :rule="nameRules">
-                    <n-input v-model:value="editForm.name" />
-                </n-form-item>
-                <n-form-item label="描述">
-                    <n-input v-model:value="editForm.description" type="textarea" />
-                </n-form-item>
-                <n-form-item label="状态">
-                    <n-select v-model:value="editForm.status" :options="statusOptions" placeholder="请选择状态" />
-                </n-form-item>
-                <n-form-item label="版本">
-                    <n-input v-model:value="editForm.version" disabled />
-                </n-form-item>
-            </n-form>
-            <template #action>
-                <n-button @click="showEditModal = false">取消</n-button>
-                <n-button type="primary" @click="submitEdit">保存</n-button>
-            </template>
-        </n-modal>
-
-        <n-card title="流程列表">
-            <div class="mb-4 flex justify-between items-center">
-                <n-space>
-                    <n-button type="primary" @click="showCreateModal = true">创建流程</n-button>
-                    <n-button type="error" :disabled="selectedRowKeys.length === 0" @click="handleBatchDelete">
-                        删除选中流程
-                    </n-button>
-                </n-space>
-            </div>
-            <n-data-table :columns="columns" :data="flows" :loading="loading" :pagination="pagination"
-                @update:page="handlePageChange" remote :row-key="(row: Flow) => row.flow_id"
-                v-model:checked-row-keys="selectedRowKeys"
-                @update:sorter="handleSorterChange" />
-        </n-card>
-    </div>
+    <n-modal v-model:show="showEditModal" title="编辑流程" preset="dialog">
+        <n-form :model="editForm" label-width="80">
+            <n-form-item label="名称" path="name" :rule="nameRules">
+                <n-input v-model:value="editForm.name" />
+            </n-form-item>
+            <n-form-item label="描述">
+                <n-input v-model:value="editForm.description" type="textarea" />
+            </n-form-item>
+            <n-form-item label="状态">
+                <n-select v-model:value="editForm.status" :options="statusOptions" placeholder="请选择状态" />
+            </n-form-item>
+            <n-form-item label="版本">
+                <n-input v-model:value="editForm.version" disabled />
+            </n-form-item>
+        </n-form>
+        <template #action>
+            <n-button @click="showEditModal = false">取消</n-button>
+            <n-button type="primary" @click="submitEdit">保存</n-button>
+        </template>
+    </n-modal>
+    <n-modal v-model:show="showRunnerModal" preset="card" title="流程测试" style="width: 100vw; height: 100vh;"
+        :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
+        <FlowRunner :flow-id="currentFlowId" :test-mode="true" />
+    </n-modal>
+    <n-card title="流程列表">
+        <div class="mb-4 flex justify-between items-center">
+            <n-space>
+                <n-button type="primary" @click="showCreateModal = true">创建流程</n-button>
+                <n-button type="error" :disabled="selectedRowKeys.length === 0" @click="handleBatchDelete">
+                    删除选中流程
+                </n-button>
+            </n-space>
+        </div>
+        <n-data-table :columns="columns" :data="flows" :loading="loading" :pagination="pagination"
+            @update:page="handlePageChange" remote :row-key="(row: Flow) => row.flow_id"
+            v-model:checked-row-keys="selectedRowKeys" @update:sorter="handleSorterChange" />
+    </n-card>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { NCard, NDataTable, NButton, NSpace, NModal, NForm, NFormItem, NInput, NSelect, NTooltip, NTag } from 'naive-ui'
+import FlowRunner from '@/views/space/flows/FlowRunner.vue'
 import type { DataTableColumns } from 'naive-ui'
 import axios from '@/utils/axios'
 import { TenantSpaceAPI } from '@/apis/endpoints'
@@ -82,6 +83,8 @@ const pageSize = ref(10)
 const page = ref(1)
 const sortColumn = ref<string | null>(null)
 const sortOrder = ref<'ascend' | 'descend' | null>(null)
+const showRunnerModal = ref(false)
+const currentFlowId = ref<string>('')
 
 const pagination = ref({ pageSize: pageSize.value, page: page.value, itemCount: total.value })
 
@@ -146,7 +149,10 @@ const columns: DataTableColumns<Flow> = [
                         'a',
                         {
                             href: 'javascript:void(0)',
-                            onClick: () => router.push({ name: 'FlowRunner', params: { id: row.flow_id } }),
+                            onClick: () => {
+                                currentFlowId.value = row.flow_id
+                                showRunnerModal.value = true
+                            },
                             style: { color: '#2080f0', cursor: 'pointer' }
                         },
                         '运行'
@@ -162,10 +168,10 @@ const columns: DataTableColumns<Flow> = [
             const type = row.status === 'started'
                 ? 'success'
                 : row.status === 'stoped'
-                ? 'default'
-                : row.status === 'error'
-                ? 'error'
-                : 'warning'
+                    ? 'default'
+                    : row.status === 'error'
+                        ? 'error'
+                        : 'warning'
             return h(
                 NTag,
                 { type, size: 'small' },
@@ -183,16 +189,16 @@ const columns: DataTableColumns<Flow> = [
         key: 'created_at',
         sorter: true,
         render: (row) => {
-          const date = new Date(row.created_at)
-          return h('div', [
-            h('div', date.toLocaleDateString()),
-            h('div', {
-              style: {
-                fontSize: '12px',
-                color: '#888'
-              }
-            }, date.toLocaleTimeString())
-          ])
+            const date = new Date(row.created_at)
+            return h('div', [
+                h('div', date.toLocaleDateString()),
+                h('div', {
+                    style: {
+                        fontSize: '12px',
+                        color: '#888'
+                    }
+                }, date.toLocaleTimeString())
+            ])
         }
     }
 ]

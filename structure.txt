@@ -1,0 +1,62 @@
+.
+├── dist
+│   ├── assets
+│   │   ├── 401-C7C-eDbO.js
+│   │   ├── 403-Dh9kwlDE.js
+│   │   ├── 404-BXyq8Vvx.js
+│   │   ├── 500-C5_GDvUC.js
+│   │   ├── index-DqFlf9H8.js
+│   │   ├── index-DTNE4yla.css
+│   │   ├── logo-circle-D8tuN2az.svg
+│   │   ├── TenantProfile-II5Yq_nR.js
+│   │   ├── TenantRoles-BbN3X5i2.js
+│   │   ├── TenantSettingsLayout-BlfNMSMc.js
+│   │   ├── TenantUsers-jHLuh6ri.js
+│   │   └── TenantUsers-tn0RQdqM.css
+│   └── index.html
+├── index.html
+├── package-lock.json
+├── package.json
+├── public
+├── README.md
+├── src
+│   ├── apis
+│   │   └── endpoints.ts
+│   ├── App.vue
+│   ├── assets
+│   │   ├── logo-black-white.svg
+│   │   ├── logo-circle.svg
+│   │   └── logo.svg
+│   ├── components
+│   │   ├── expression-builder
+│   │   ├── flows
+│   │   ├── layout
+│   │   ├── nodes
+│   │   └── shared
+│   ├── constants
+│   │   └── routes.ts
+│   ├── env.d.ts
+│   ├── layouts
+│   │   └── DashboardLayout.vue
+│   ├── main.ts
+│   ├── router
+│   │   └── index.ts
+│   ├── store
+│   │   ├── flow.ts
+│   │   ├── navbar.ts
+│   │   └── user.ts
+│   ├── style.css
+│   ├── utils
+│   │   ├── axios.ts
+│   │   ├── schematize.ts
+│   │   └── uid.ts
+│   └── views
+│       ├── auth
+│       ├── errors
+│       ├── platform
+│       └── space
+├── structure.txt
+├── tsconfig.json
+└── vite.config.ts
+
+23 directories, 37 files

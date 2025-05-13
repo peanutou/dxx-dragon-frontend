@@ -6,10 +6,10 @@
         <n-modal v-model:show="showModal" title="生成 Schema" preset="card" style="width: 640px;">
             <n-space vertical style="max-height: 60vh; overflow: hidden;">
                 <n-input v-model:value="sampleJson" type="textarea" placeholder="请输入 JSON 示例数据"
-                    :autosize="{ minRows: 6 }" style="font-size: 12px;"/>
+                    :autosize="{ minRows: 6 }" style="font-size: 12px;" />
                 <n-button @click="generateSchema" type="primary">生成 Schema</n-button>
                 <div style="max-height: 300px; overflow: auto;">
-                  <VueJsonPretty :data="schema" :deep="2" :showLine="false" showLength showIcon theme="dark"/>
+                    <VueJsonPretty :data="schema" :deep="2" :showLine="false" showLength showIcon theme="dark" />
                 </div>
             </n-space>
             <template #footer>
@@ -29,20 +29,16 @@ import schematize from '@/utils/schematize' // Generate schema from JSON
 import VueJsonPretty from 'vue-json-pretty'
 import 'vue-json-pretty/lib/styles.css'
 
-const props = defineProps<{
-    linkText?: string
-}>()
-
+defineProps<{ linkText?: string }>()
+const modelSchema = defineModel<Record<string, any> | string>('schema')
+const schema = ref<Record<string, any> | string>()
 const emit = defineEmits(['update:schema'])
-
 const showModal = ref(false)
 const sampleJson = ref('')
-const schema = defineModel<Record<string, any>>('schema')
 const message = useMessage()
 
-watch(schema, (newSchema) => {
-    sampleJson.value = ''
-    schema.value = newSchema
+watch(modelSchema, (val) => {
+    schema.value = val || {}
 }, { immediate: true })
 
 function generateSchema() {

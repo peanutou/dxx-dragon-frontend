@@ -19,8 +19,10 @@ instance.interceptors.response.use(
     error => {
         const status = error.response?.status
         const currentPath = window.location.pathname
-
         if (status === 401) {
+            const userStore = useUserStore();
+            userStore.logout()
+            console.log('Token expired or invalid, redirecting to login page.')
             router.push({ path: '/login', query: { redirect: currentPath } })
         } else if (status === 403) {
             router.push('/403')

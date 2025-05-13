@@ -70,6 +70,11 @@ const routes: RouteRecordRaw[] = [
                 }
             },
             {
+                path: 'space/chat',
+                name: 'ChatView',
+                component: () => import('@/views/chat/ChatView.vue')
+            },
+            {
                 path: 'space/settings',
                 name: 'TenantSettings',
                 component: () => import('@/views/space/settings/TenantSettingsLayout.vue'),

@@ -60,4 +60,8 @@ export const TenantSpaceAPI = {
         downloadStream: (fileId: string) => `/space/files/${fileId}/download`,
         downloadBase64: (fileId: string) => `/space/files/${fileId}/download/base64`,
     },
+    chat: {
+        send: '/space/chat',
+        stream: '/space/chat/stream'
+    },
 }
