@@ -25,17 +25,15 @@
                     <n-form-item label="必填" label-placement="left" label-width="80px">
                         <n-switch v-model:value="input.required" />
                     </n-form-item>
-                    <n-form-item v-if="input.type === 'select' && input.options" label="下拉选项" label-placement="left"
-                        label-width="80px">
-                        <div class="space-y-2 w-full">
-                            <div v-for="(option, optIndex) in input.options" :key="optIndex"
-                                class="flex items-center space-x-2">
-                                <n-input v-model:value="input.options[optIndex]" placeholder="请输入选项内容" class="flex-1" />
-                                <n-button type="error" size="tiny"
-                                    @click="removeOption(input, optIndex)">删除选项</n-button>
-                            </div>
-                            <n-button size="tiny" @click="addOption(input)">新增选项</n-button>
-                        </div>
+                    <n-form-item v-if="input.type === 'select'" label="下拉选项" label-placement="left" label-width="80px">
+                        <n-dynamic-input v-model:value="input.options" :min="0" :on-create="() => ''" show-sort-button>
+                            <template #default="{ value: option, index: optIndex }">
+                                <div class="flex items-center space-x-2 w-full">
+                                    <n-input v-model:value="input.options[optIndex]" placeholder="请输入选项内容"
+                                        class="flex-1" />
+                                </div>
+                            </template>
+                        </n-dynamic-input>
                     </n-form-item>
                 </div>
             </template>

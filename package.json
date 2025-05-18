@@ -27,11 +27,10 @@
     "uuid": "^11.1.0",
     "vue": "^3.5.13",
     "vue-json-pretty": "^2.4.0",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "vue3-markdown-it": "^1.0.10"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.6",
-    "@tailwindcss/typography": "^0.5.16",
     "@types/md5": "^2.3.5",
     "@types/node": "^22.15.17",
     "@types/uuid": "^10.0.0",

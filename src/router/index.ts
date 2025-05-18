@@ -12,6 +12,22 @@ import Dashboard from '@/views/space/dashboard/Dashboard.vue'
 import FlowList from '@/views/space/flows/FlowList.vue'
 import FlowEditor from '@/views/space/flows/FlowEditor.vue'
 import FlowRunner from '@/views/space/flows/FlowRunner.vue'
+import TenantSettingsLayout from '@/views/space/settings/TenantSettingsLayout.vue'
+import TenantProfile from '@/views/space/settings/TenantProfile.vue'
+import TenantRoles from '@/views/space/settings/TenantRoles.vue'
+import TenantUsers from '@/views/space/settings/TenantUsers.vue'
+
+// Chat模块
+import ChatView from '@/views/space/chat/ChatView.vue'
+
+// 文件模块
+import FileList from '@/views/space/files/FileList.vue'
+
+// 错误页面
+import NotFound from '@/views/errors/404.vue'
+import ServerError from '@/views/errors/500.vue'
+import Forbidden from '@/views/errors/403.vue'
+import Unauthorized from '@/views/errors/401.vue'
 
 const routes: RouteRecordRaw[] = [
     {
@@ -72,27 +88,32 @@ const routes: RouteRecordRaw[] = [
             {
                 path: 'space/chat',
                 name: 'ChatView',
-                component: () => import('@/views/chat/ChatView.vue')
+                component: ChatView,
+            },
+            {
+                path: 'space/files',
+                name: 'FileList',
+                component: FileList
             },
             {
                 path: 'space/settings',
                 name: 'TenantSettings',
-                component: () => import('@/views/space/settings/TenantSettingsLayout.vue'),
+                component: TenantSettingsLayout,
                 children: [
                     {
                         path: 'profile',
                         name: 'TenantProfile',
-                        component: () => import('@/views/space/settings/TenantProfile.vue')
+                        component: TenantProfile
                     },
                     {
                         path: 'roles',
                         name: 'TenantRoles',
-                        component: () => import('@/views/space/settings/TenantRoles.vue')
+                        component: TenantRoles
                     },
                     {
                         path: 'users',
                         name: 'TenantUsers',
-                        component: () => import('@/views/space/settings/TenantUsers.vue')
+                        component: TenantUsers
                     }
                 ]
             }
@@ -102,22 +123,22 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/403',
         name: 'Forbidden',
-        component: () => import('@/views/errors/403.vue')
+        component: Forbidden
     },
     {
         path: '/401',
         name: 'Unauthorized',
-        component: () => import('@/views/errors/401.vue')
+        component: Unauthorized
     },
     {
         path: '/404',
         name: 'NotFound',
-        component: () => import('@/views/errors/404.vue')
+        component: NotFound
     },
     {
         path: '/500',
         name: 'ServerError',
-        component: () => import('@/views/errors/500.vue')
+        component: ServerError
     }
 ]
 

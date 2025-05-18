@@ -51,9 +51,9 @@
                 </n-button>
             </n-space>
         </div>
-        <n-data-table :columns="columns" :data="flows" :loading="loading" :pagination="pagination"
-            @update:page="handlePageChange" remote :row-key="(row: Flow) => row.flow_id"
-            v-model:checked-row-keys="selectedRowKeys" @update:sorter="handleSorterChange" />
+        <n-data-table :columns="columns" :data="flows" :loading="loading" :pagination="pagination" remote
+            :row-key="(row: Flow) => row.flow_id" v-model:checked-row-keys="selectedRowKeys"
+            @update:sorter="handleSorterChange" />
     </n-card>
 </template>
 
@@ -73,20 +73,33 @@ interface Flow {
     version: string
     created_at: string
     status: string
+    client_key: string
 }
 
 const router = useRouter()
 const flows = ref<Flow[]>([])
 const loading = ref(false)
-const total = ref(0)
-const pageSize = ref(10)
-const page = ref(1)
 const sortColumn = ref<string | null>(null)
 const sortOrder = ref<'ascend' | 'descend' | null>(null)
 const showRunnerModal = ref(false)
 const currentFlowId = ref<string>('')
 
-const pagination = ref({ pageSize: pageSize.value, page: page.value, itemCount: total.value })
+const pagination = ref({
+    pageSize: 10,
+    page: 1,
+    itemCount: 0,
+    showSizePicker: true,
+    pageSizes: [10, 20, 50, 100],
+    onUpdatePageSize: (size: number) => {
+        pagination.value.pageSize = size
+        pagination.value.page = 1
+        fetchFlows()
+    },
+    onChange: (currentPage: number) => {
+        pagination.value.page = currentPage
+        fetchFlows()
+    }
+})
 
 const statusOptions = [
     { label: '已启动', value: 'started' },
@@ -185,6 +198,52 @@ const columns: DataTableColumns<Flow> = [
         sorter: true
     },
     {
+        title: 'ID',
+        key: 'flow_id',
+        render: (row) => {
+            return h('div', { class: 'flex items-center space-x-2' }, [
+                h(
+                    NButton,
+                    {
+                        size: 'tiny',
+                        type: 'primary',
+                        secondary: true,
+                        disabled: !row.flow_id,
+                        onClick: () => {
+                            if (row.flow_id) {
+                                navigator.clipboard.writeText(row.flow_id)
+                            }
+                        }
+                    },
+                    { default: () => '复制' }
+                )
+            ])
+        }
+    },
+    {
+        title: 'Client Key',
+        key: 'client_key',
+        render: (row) => {
+            return h('div', { class: 'flex items-center space-x-2' }, [
+                h(
+                    NButton,
+                    {
+                        size: 'tiny',
+                        type: 'primary',
+                        secondary: true,
+                        disabled: !row.client_key,
+                        onClick: () => {
+                            if (row.client_key) {
+                                navigator.clipboard.writeText(row.client_key)
+                            }
+                        }
+                    },
+                    { default: () => '复制' }
+                )
+            ])
+        }
+    },
+    {
         title: '创建时间',
         key: 'created_at',
         sorter: true,
@@ -208,29 +267,19 @@ const fetchFlows = async () => {
     try {
         const res = await axios.get(TenantSpaceAPI.flows.list, {
             params: {
-                page: page.value,
-                size: pageSize.value,
+                page: pagination.value.page,
+                size: pagination.value.pageSize,
                 sort_by: sortColumn.value,
                 order: sortOrder.value === 'ascend' ? 'asc' : sortOrder.value === 'descend' ? 'desc' : undefined
             }
         })
         flows.value = res.data.data?.flows || []
-        total.value = res.data.data?.total || 0
-        pagination.value = {
-            pageSize: pageSize.value,
-            page: page.value,
-            itemCount: total.value
-        }
+        pagination.value.itemCount = res.data.data?.total || 0
     } catch (err) {
         console.error('获取流程失败:', err)
     } finally {
         loading.value = false
     }
-}
-
-const handlePageChange = (newPage: number) => {
-    page.value = newPage
-    fetchFlows()
 }
 
 const handleSorterChange = (sorter: any) => {
@@ -258,7 +307,8 @@ const editForm = ref<Flow>({
     description: '',
     version: '',
     created_at: '',
-    status: ''
+    status: '',
+    client_key: ''
 })
 
 const selectedRowKeys = ref<string[]>([])

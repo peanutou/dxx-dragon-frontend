@@ -3,9 +3,9 @@
         <!-- 左侧节点面板 -->
         <div class="left-panel side-panel">
             <n-card title="节点面板" size="small" class="h-full">
-                <n-button v-for="type in nodeTypes" :key="type" class="draggable-node" draggable="true" text block
-                    @dragstart="onDragStart($event, type)">
-                    {{ type }}
+                <n-button v-for="type in nodeTypeButtons" :key="type" class="draggable-node" text block
+                    @dragstart="onDragStart($event, type)" draggable="true">
+                    {{ type }}{{ nodeCountOfEachType[type] ? ` - ${nodeCountOfEachType[type]}` : '' }}
                 </n-button>
             </n-card>
         </div>
@@ -39,8 +39,13 @@
                 <template #header-extra>
                     <n-button quaternary circle size="tiny" @click="showPropertyPanel = false">✕</n-button>
                 </template>
-                <NodeConfigPanel :selected-node="selectedNode"
-                    @update:config="(data) => handleNodeUpdate(data, 'config')" />
+                <template #default>
+                    <!-- Scrollable area for NodeConfigPanel with a max height -->
+                    <div style="height: calc(100vh - 120px);">
+                        <NodeConfigPanel :selected-node="selectedNode"
+                            @update:config="(data) => handleNodeUpdate(data, 'config')" />
+                    </div>
+                </template>
             </n-card>
         </div>
     </div>
@@ -60,7 +65,9 @@
     </n-modal>
     <n-modal v-model:show="showNodeTestDialog" preset="card" title="测试运行" style="width: 100vw; height: 100vh;"
         :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
-        <NodeTestDialog :node-data="testNodeData" @update:schema="(data) => handleNodeUpdate(data, 'schema')"
+        <NodeTestDialog 
+            :node-data="testNodeData" 
+            @update:schema="(data) => handleNodeUpdate(data, 'schema')"
             @update:save-test="(data) => handleNodeUpdate(data, 'test')"
             @update:clear-test="(data) => handleNodeUpdate(data, 'clear')" />
     </n-modal>
@@ -73,9 +80,10 @@ import '@vue-flow/core/dist/theme-default.css'
 import type { NodeChange, EdgeChange, Connection } from '@vue-flow/core';
 import { ref, computed, onMounted, markRaw, h, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { VueFlow, ConnectionMode } from '@vue-flow/core'
+import { VueFlow, ConnectionMode, Node } from '@vue-flow/core'
 import { useNavbarStore } from '@/store/navbar'
 import { useFlowStore } from '@/store/flow'
+import type { NodeType } from '@/store/flow'
 import { storeToRefs } from 'pinia'
 import { NButton, NTag, NCard } from 'naive-ui'
 import request from '@/utils/axios'
@@ -86,6 +94,8 @@ import RegexNode from '@/components/nodes/custom-nodes/RegexNode.vue'
 import AggregatorNode from '@/components/nodes/custom-nodes/AggregatorNode.vue'
 import ExcelNode from '@/components/nodes/custom-nodes/ExcelNode.vue';
 import ComparerNode from '@/components/nodes/custom-nodes/ComparerNode.vue';
+import StartNode from '@/components/nodes/custom-nodes/StartNode.vue'
+import EndNode from '@/components/nodes/custom-nodes/EndNode.vue'
 import FlowGlobalsEditor from './FlowGlobalsEditor.vue'
 import FlowYAMLViewer from './FlowYAMLViewer.vue'
 import FlowRunner from './FlowRunner.vue'
@@ -103,6 +113,17 @@ const statusOptions = [
     { label: '已发布', value: 'published' },
     { label: '已弃用', value: 'deprecated' }
 ]
+const nodeTypeButtons = ['Start', 'End','Prompt', 'Http', 'Regex', 'Aggregator', 'Excel', 'Comparer']
+const nodeCountOfEachType = computed(() => {
+    const countMap: Record<string, number> = {}
+    nodes.value.forEach(node => {
+        const type = node.type
+        if (type) {
+            countMap[type] = (countMap[type] || 0) + 1
+        }
+    })
+    return countMap
+})
 const nodeTypesMap = {
     Prompt: markRaw(PromptNode),
     Http: markRaw(HTTPNode),
@@ -110,6 +131,8 @@ const nodeTypesMap = {
     Aggregator: markRaw(AggregatorNode),
     Excel: markRaw(ExcelNode),
     Comparer: markRaw(ComparerNode),
+    Start: markRaw(StartNode),
+    End: markRaw(EndNode),
 }
 const flowStore = useFlowStore()
 const { undoStack, redoStack, hasChanges, inputs, variables, nodes, edges } = storeToRefs(flowStore)
@@ -117,8 +140,7 @@ const { undoStack, redoStack, hasChanges, inputs, variables, nodes, edges } = st
 const flowInputs = inputs
 const flowVariables = variables
 let dragOffset = { x: 0, y: 0 }
-const nodeTypes = ['Prompt', 'HTTP', 'Regex', 'Aggregator', 'Excel', 'Comparer']
-const selectedNode = ref<Record<string, any> | undefined>(undefined)
+const selectedNode = ref<Node | undefined>(undefined)
 // Track if nodes are being dragged
 const isDraggingNodes = ref(false)
 const showPropertyPanel = ref(true)
@@ -576,10 +598,11 @@ async function onDrop(event: DragEvent) {
     const position = getCanvasDropPosition(event)
     const uniqueName = `${type.toLowerCase()}_${generateShortId()}`
     let defaultNodeData: Record<string, any> = {
-        label: `${type} 节点`,
         name: uniqueName,
-        type: type.toLowerCase(),
-        frontend: { id: uniqueName }
+        type: type,
+        frontend: {
+            id: uniqueName, label: `${type} 节点`,
+        }
     }
 
     function generateDefaultValue(schema: any, definitions: Record<string, any>): any {
@@ -617,7 +640,7 @@ async function onDrop(event: DragEvent) {
 
     try {
         const res = await request.get(TenantSpaceAPI.flows.nodeTypes)
-        const schema = res?.data?.data?.[type.toLowerCase()]
+        const schema = res?.data?.data?.[type]
         // console.log('节点类型:', type, schema)
         if (schema?.properties) {
             const definitions = schema.$defs || {}
@@ -631,11 +654,10 @@ async function onDrop(event: DragEvent) {
     } catch (err) {
         console.warn('无法加载默认节点配置:', err)
     }
-    const nodeComponentType = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()
     snapshot()
     nodes.value.push({
         id: uniqueName,
-        type: nodeComponentType, // This should already match keys like 'Prompt', 'HTTP', or 'Regex'
+        type: type as NodeType, // This should already match keys like 'Prompt', 'HTTP', or 'Regex'
         position,
         data: { ...defaultNodeData, name: uniqueName }
     })
@@ -662,7 +684,7 @@ function onConnect(params: { source: string; target: string; sourceHandle?: stri
     }
 }
 
-function onNodeClick(event: { node: Record<string, any> }) {
+function onNodeClick(event: { node: Node }) {
     selectedNode.value = event.node
     showPropertyPanel.value = true
 }

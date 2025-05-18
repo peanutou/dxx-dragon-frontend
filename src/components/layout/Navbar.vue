@@ -16,7 +16,7 @@
     <!-- 右侧区域：用户头像及提示 -->
     <n-tooltip trigger="hover">
         <template #trigger>
-            <img :src="logo" alt="Logo" class="h-8" />
+            <img :src="logo" alt="Logo" class="h-[32px]" />
         </template>
         {{ user?.email }}
     </n-tooltip>

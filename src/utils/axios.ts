@@ -10,7 +10,7 @@ instance.interceptors.request.use((config) => {
     const token = useUserStore().token
     const tenantSlug = window.location.hostname.split('.')[0]  // 从子域名提取租户标识
     if (token) config.headers.Authorization = `Bearer ${token}`
-    if (tenantSlug) config.headers['X-Tenant-Slug'] = tenantSlug  // 👈 添加租户标识
+    // if (tenantSlug) config.headers['X-Tenant-Slug'] = tenantSlug  // 👈 添加租户标识
     return config
 })
 

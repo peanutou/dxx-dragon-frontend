@@ -10,6 +10,9 @@ export const ROUTE = {
         FLOWS: {
             LIST: '/space/flows',
         },
+        FILES: {
+            LIST: '/space/files',
+        },
         CHAT: '/space/chat',
     }
 }

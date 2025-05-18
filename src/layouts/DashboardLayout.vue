@@ -59,6 +59,7 @@ const menuOptions = [
         children: [
             { label: '租户管理', key: ROUTE.SPACE.PROFILE, icon: renderIcon(PeopleOutline) },
             { label: '流程管理', key: ROUTE.SPACE.FLOWS.LIST, icon: renderIcon(GitBranchOutline) },
+            { label: '文件助手', key: ROUTE.SPACE.FILES.LIST, icon: renderIcon(AppsOutline) },
             { label: '对话助手', key: ROUTE.SPACE.CHAT, icon: renderIcon(ChatbubbleEllipsesOutline) }
         ]
     }

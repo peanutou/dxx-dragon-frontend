@@ -1,9 +1,10 @@
-import { time } from 'console'
 import { defineStore } from 'pinia'
+import { computed } from 'vue'
 
 /********** Flow Inputs **********/
 
-type InputFieldType = 'string' | 'number' | 'select' | 'boolean' | 'file'
+export type InputFieldType = 'string' | 'number' | 'select' | 'boolean' | 'file'
+export type NodeType = 'Prompt' | 'Http' | 'Regex' | 'Aggregator' | 'Excel' | 'Comparer' | 'Unknown' | 'Start' | 'End'
 
 export interface InputFieldConfig {
     name: string
@@ -30,11 +31,11 @@ export interface NodeTestInputs {
 
 export interface BaseNodeConfig {
     id: string
-    type: string
+    type: NodeType
     position: { x: number; y: number }
     data: {
         name: string;
-        type?: string;
+        type?: NodeType;
         depends_on?: string[];
         inputs?: Record<string, any>;
         outputs?: NodeOutputs;
@@ -92,6 +93,7 @@ export const useFlowStore = defineStore('flow', {
         nodes: [] as BaseNodeConfig[],
         edges: [] as any[],
         inputs: [] as InputFieldConfig[],
+        outputs: [] as InputFieldConfig[],
         variables: {} as Record<string, any>,
         meta: {
             frontend: {
@@ -280,7 +282,7 @@ export const useFlowStore = defineStore('flow', {
         loadDataToNodes(dataArray: any[]) {
             this.nodes = dataArray.map((data) => {
                 const type = data.type?.charAt(0).toUpperCase() + data.type?.slice(1) || 'Unknown'
-                const id = data.frontend?.id || `${type}-${Math.random().toString(36).substr(2, 5)}`
+                const id = data.frontend?.id || `${type}-${Math.random().toString(36).slice(2, 7)}`
                 const position = data.frontend?.position || { x: 0, y: 0 }
                 return {
                     id,

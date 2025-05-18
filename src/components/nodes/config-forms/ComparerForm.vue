@@ -1,25 +1,24 @@
 <template>
-    <n-form :model="localData" label-placement="top">
+    <n-form :model="node" label-placement="top">
         <n-form-item label="名称">
-            <n-input v-model:value="localData.name" placeholder="请输入节点名称" />
+            <n-input v-model:value="node.name" placeholder="请输入节点名称" />
         </n-form-item>
         <n-form-item label="Target Table">
             <div class="flex gap-2 w-full">
-                <n-select class="flex-1" v-model:value="localData.target_table" :options="tableOptions"
+                <n-select class="flex-1" v-model:value="node.target_table" :options="tableOptions"
                     placeholder="选择目标表" />
             </div>
         </n-form-item>
 
         <n-form-item label="Input Table">
             <div class="flex gap-2 w-full">
-                <n-select class="flex-1" v-model:value="localData.input_table" :options="tableOptions"
-                    placeholder="选择输入表" />
+                <n-select class="flex-1" v-model:value="node.input_table" :options="tableOptions" placeholder="选择输入表" />
             </div>
         </n-form-item>
 
         <!-- Rules Editor -->
         <n-form-item label="Group Rules">
-            <n-dynamic-input v-model:value="localData.rules" item-style="margin-bottom: 8px;" :on-create="() => ({
+            <n-dynamic-input v-model:value="node.rules" item-style="margin-bottom: 8px;" :on-create="() => ({
                 mode: ComparisonMode.INDIVIDUAL,
                 expression: '',
             })" show-sort-button>
@@ -50,12 +49,6 @@
                 </template>
             </n-dynamic-input>
         </n-form-item>
-
-        <n-space vertical :size="12">
-            <schema-input v-model:schema="localData.outputs_schema" link-text="输出 Schema (可选)"
-                placeholder="请输入 JSON 示例数据" />
-            <n-button type="primary" @click="submit">保存配置</n-button>
-        </n-space>
     </n-form>
 
     <!-- ExpressionBuilder modal -->
@@ -64,9 +57,9 @@
             if (currentExprKey === 'expression') {
                 return getAllTableKeys()
             } else if (currentExprKey === 'target_expression') {
-                return getTableKeys(localData.target_table)
+                return getTableKeys(node.target_table)
             } else if (currentExprKey === 'input_expression') {
-                return getTableKeys(localData.input_table)
+                return getTableKeys(node.input_table)
             }
             return []
         })()" :variable-names="Object.keys(flowStore.variables)" />
@@ -77,9 +70,8 @@
 </template>
 
 <script setup lang="ts">
-import { NForm, NFormItem, NSelect, NInput, NButton } from 'naive-ui'
-import { NodeProps } from '@vue-flow/core'
-import { watch, computed, reactive, ref } from 'vue'
+import { NForm, NFormItem, NSelect, NInput, NDynamicInput, NSpace, NButton } from 'naive-ui'
+import { computed, ref } from 'vue'
 import { useFlowStore } from '@/store/flow'
 import SchemaInput from '@/components/shared/SchemaInput.vue'
 import ExpressionBuilder from '@/components/expression-builder/ExpressionBuilder.vue'
@@ -93,8 +85,12 @@ enum ComparisonMode {
 // Comparer node configuration interface
 interface ComparerNodeConfig /* extends BaseNodeConfig */ {
     type: string
-    target_table: Record<string, any[]>
-    input_table: Record<string, any[]>
+    name: string
+    target_table: string
+    input_table: string
+    frontend: {
+        id: string
+    }
     rules: {
         mode: ComparisonMode
         expression: string
@@ -103,31 +99,17 @@ interface ComparerNodeConfig /* extends BaseNodeConfig */ {
     }[]
 }
 
-const props = defineProps<{
-    node: NodeProps & {
-        data: ComparerNodeConfig & {
-            target_table?: string
-            input_table?: string
-            rules: []
-        }
-    }
-}>()
+const { node } = defineProps<{ node: ComparerNodeConfig }>()
 
-const localData = reactive({ ...props.node.data })
 const showExprBuilder = ref(false)
 const currentExprIndex = ref<number>()
 const currentExpr = ref<string>('')
 const currentExprKey = ref<'expression' | 'target_expression' | 'input_expression'>('expression')
 
-const emit = defineEmits<{
-    (e: 'update:config', data: typeof props.node.data): void
-}>()
-
-
 function onEdit(index: number, key: 'expression' | 'target_expression' | 'input_expression' = 'expression') {
     currentExprIndex.value = index
     currentExprKey.value = key
-    currentExpr.value = localData.rules[index][key] || ''
+    currentExpr.value = node.rules[index][key] || ''
     showExprBuilder.value = true
 }
 function onModalClose() {
@@ -137,24 +119,16 @@ function onModalClose() {
         currentExpr.value !== null &&
         currentExprKey.value
     ) {
-        localData.rules[currentExprIndex.value][currentExprKey.value] = currentExpr.value
+        node.rules[currentExprIndex.value][currentExprKey.value] = currentExpr.value
     }
     showExprBuilder.value = false
 }
 
 const flowStore = useFlowStore()
-watch(
-    () => props.node.data,
-    (newData) => {
-        // Merge newData into the reactive localData to trigger updates
-        Object.assign(localData, newData)
-    },
-    { immediate: true, deep: true }
-)
 
 // Computed options for table selection populated from incoming nodes
 const tableOptions = computed(() => {
-    const targetId = props.node.id
+    const targetId = node.frontend.id
     const incoming = flowStore.edges.filter(e => e.target === targetId)
     return incoming
         .map(e => {
@@ -165,14 +139,6 @@ const tableOptions = computed(() => {
         })
         .filter((opt): opt is { label: string; value: string } => opt !== null)
 })
-
-function submit() {
-    try {
-        emit('update:config', { ...localData })
-    } catch (e) {
-        window.$message?.error?.('请检查模板 JSON 格式是否正确:')
-    }
-}
 
 function getTableKeys(tableName?: string): string[] {
     if (!tableName) return []

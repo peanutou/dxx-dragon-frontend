@@ -73,26 +73,23 @@ interface Tenant {
 const router = useRouter()
 const tenants = ref<Tenant[]>([])
 const loading = ref(false)
-const total = ref(0)
-const pageSize = ref(10)
-const page = ref(1)
 const checkedRowKeys = ref<(string | number)[]>([])
 const sortColumn = ref<string | null>(null)
 const sortOrder = ref<'ascend' | 'descend' | null>(null)
 
 const pagination = ref({
-    pageSize: pageSize.value,
-    page: page.value,
-    itemCount: total.value,
+    pageSize: 10,
+    page: 1,
+    itemCount: 0,
     showSizePicker: true,
     pageSizes: [10, 20, 50, 100],
     onUpdatePageSize: (size: number) => {
-        pageSize.value = size
-        page.value = 1
+        pagination.value.pageSize = size
+        pagination.value.page = 1
         fetchTenants()
     },
     onChange: (currentPage: number) => {
-        page.value = currentPage
+        pagination.value.page = currentPage
         fetchTenants()
     }
 })
@@ -141,30 +138,14 @@ const fetchTenants = async () => {
     try {
         const res = await axios.get(PlatformTenantAPI.list, {
             params: {
-                page: page.value,
-                size: pageSize.value,
+                page: pagination.value.page,
+                size: pagination.value.pageSize,
                 sort_by: sortColumn.value,
                 order: sortOrder.value === 'ascend' ? 'asc' : sortOrder.value === 'descend' ? 'desc' : undefined
             }
         })
         tenants.value = res.data.data?.tenants || []
-        total.value = res.data.data?.total || 0
-        pagination.value = {
-            pageSize: pageSize.value,
-            page: page.value,
-            itemCount: total.value,
-            showSizePicker: true,
-            pageSizes: [10, 20, 50, 100],
-            onUpdatePageSize: (size: number) => {
-                pageSize.value = size
-                page.value = 1
-                fetchTenants()
-            },
-            onChange: (currentPage: number) => {
-                page.value = currentPage
-                fetchTenants()
-            }
-        }
+        pagination.value.itemCount = res.data.data?.total || 0
     } catch (err) {
         console.error('获取租户失败:', err)
     } finally {

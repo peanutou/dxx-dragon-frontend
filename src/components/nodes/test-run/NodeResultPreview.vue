@@ -39,10 +39,13 @@ const path = ref<string[]>([])
 watch(
     () => props.data,
     (newData) => {
-        parsedResult.value = newData?.data?.node?.outputs?.result
+        const result = newData?.data?.node?.outputs?.result
+        parsedResult.value = result
         path.value = []
-        const keys = Object.keys(parsedResult.value || {})
-        if (keys.length > 0) path.value = [keys[0]]
+        if (result && typeof result === 'object' && !Array.isArray(result)) {
+            const keys = Object.keys(result)
+            if (keys.length > 0) path.value = [keys[0]]
+        }
     },
     { deep: true, immediate: true }
 )

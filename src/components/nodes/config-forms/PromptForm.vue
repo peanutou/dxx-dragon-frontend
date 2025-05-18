@@ -1,20 +1,20 @@
 <template>
-    <n-form label-placement="top" class="space-y-0">
+    <n-form :model="node" label-placement="top">
         <n-form-item label="名称">
-            <n-input v-model:value="localData.name" placeholder="请输入节点名称" />
+            <n-input v-model:value="node.name" placeholder="请输入节点名称" />
         </n-form-item>
 
         <n-form-item label="模型">
-            <n-select v-model:value="localData.model" :options="[{ label: 'gpt-4o', value: 'gpt-4o' }]"
+            <n-select v-model:value="node.model" :options="[{ label: 'gpt-4o', value: 'gpt-4o' }]"
                 placeholder="请选择模型" />
         </n-form-item>
 
         <n-form-item label="Temperature">
-            <n-input-number v-model:value="localData.temperature" :min="0" :max="2" :step="0.1" />
+            <n-input-number v-model:value="node.temperature" :min="0" :max="2" :step="0.1" />
         </n-form-item>
 
         <n-form-item label="是否输出 JSON">
-            <n-switch v-model:value="localData.output_json" />
+            <n-switch v-model:value="node.output_json" />
         </n-form-item>
 
         <n-form-item>
@@ -24,18 +24,11 @@
                     <n-button size="tiny" @click="showModal = true" quaternary type="primary">大窗编辑</n-button>
                 </div>
             </template>
-            <context-input v-model:modelValue="localData.template" type="textarea" placeholder="请输入 Prompt 模板" />
+            <context-input v-model:modelValue="node.template" type="textarea" placeholder="请输入 Prompt 模板" />
         </n-form-item>
-
-        <n-space vertical :size="12">
-            <schema-input v-model:schema="localData.outputs_schema" link-text="输出 Schema (可选)" placeholder="请输入 JSON 示例数据" />
-            <n-button type="primary" @click="submit">保存配置</n-button>
-        </n-space>
-
     </n-form>
     <n-modal v-model:show="showModal" title="编辑 Prompt 模板" preset="dialog" style="width: 80%;">
-        <context-input v-model:modelValue="localData.template" type="textarea" autosize
-            style="min-height: 300px" />
+        <context-input v-model:modelValue="node.template" type="textarea" autosize style="min-height: 300px" />
         <template #action>
             <n-button type="primary" @click="showModal = false">完成</n-button>
         </template>
@@ -43,40 +36,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { NForm, NFormItem, NInput, NInputNumber, NButton, NSwitch, NSpace } from 'naive-ui'
-import SchemaInput from '@/components/shared/SchemaInput.vue'
+import { ref } from 'vue'
+import { NFormItem, NInput, NInputNumber, NButton, NSwitch, NSpace, NForm, NModal } from 'naive-ui'
 import ContextInput from '@/components/shared/ContextInput.vue'
-import type { Node } from '@vue-flow/core'
 
-const props = defineProps<{
-    node: Node
-}>()
-const localData = ref<any>({})
+// Destructure node directly for template binding
+const { node } = defineProps<{ node: Record<string, any> }>()
 const showModal = ref(false)
-const emit = defineEmits<{
-    (e: 'update:config', data: any): void
-}>()
-
-watch(
-    () => props.node.data, 
-    (newData) => {
-        // 合并默认结构，避免 undefined 字段
-        localData.value = { 
-            // defaultPromptData
-            name: '',
-            model: 'gpt-4o',
-            temperature: 0,
-            output_json: false,
-            template: '',
-            outputs_schema: {}, 
-            ...(newData || {}),
-        }
-    },
-    { immediate: true, deep: true }
-)
-
-const submit = () => {
-    emit('update:config', localData.value)
-}
 </script>

@@ -5,11 +5,16 @@
             {{ message.role === 'user' ? 'U' : 'A' }}
         </n-avatar>
         <div class="flex flex-col gap-1">
-            <n-text depth="3">
-                {{ typeof message.displayContent === 'object'
-                    ? message.displayContent.value
-                    : message.displayContent || message.content }}
-            </n-text>
+            <div :class="[
+                'p-4 mb-3 rounded-lg max-w-[800px] break-words',
+                message.role === 'user'
+                    ? 'bg-blue-500 text-white self-end'
+                    : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white self-start'
+            ]">
+                <VueMarkdown :source="typeof props.message.displayContent === 'object'
+                    ? props.message.displayContent.value
+                    : props.message.displayContent || props.message.content" class="flex flex-col gap-2"/>
+            </div>
             <div :class="['w-full flex', message.role === 'user' ? 'justify-end' : 'justify-start']">
                 <n-tag size="small" type="default" :bordered="false"
                     style="min-width: 60px; background-color: transparent; text-align: center;">
@@ -22,9 +27,10 @@
 
 <script setup lang="ts">
 import type { Ref } from 'vue'
-import { NText } from 'naive-ui'
+import VueMarkdown from 'vue3-markdown-it'
+import { NAvatar, NTag } from 'naive-ui'
 
-defineProps<{
+const props = defineProps<{
     message: {
         role: string
         content: string
@@ -32,4 +38,6 @@ defineProps<{
         timestamp: string
     }
 }>()
+
+
 </script>
