@@ -23,8 +23,8 @@ app.mount('#app')
 const { message, dialog } = createDiscreteApi(['message', 'dialog'], {
     messageProviderProps: {
         placement: 'top-right',
-        duration: 2000,
-        max: 1,
+        duration: 4000,
+        max: 2,
         closable: true,
     }
 })

@@ -40,7 +40,7 @@
     </n-modal>
     <n-modal v-model:show="showRunnerModal" preset="card" title="流程测试" style="width: 100vw; height: 100vh;"
         :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
-        <FlowRunner :flow-id="currentFlowId" :test-mode="true" />
+        <FlowRunner :flow-id="currentFlowId" :test-mode="false" />
     </n-modal>
     <n-card title="流程列表">
         <div class="mb-4 flex justify-between items-center">
@@ -74,6 +74,10 @@ interface Flow {
     created_at: string
     status: string
     client_key: string
+    current: {
+        version: string
+        publish_at: string
+    }
 }
 
 const router = useRouter()
@@ -103,7 +107,7 @@ const pagination = ref({
 
 const statusOptions = [
     { label: '已启动', value: 'started' },
-    { label: '已停止', value: 'stoped' },
+    { label: '已停止', value: 'stopped' },
 ]
 
 const columns: DataTableColumns<Flow> = [
@@ -193,9 +197,29 @@ const columns: DataTableColumns<Flow> = [
         }
     },
     {
-        title: '版本',
+        title: '编辑版本',
         key: 'version',
         sorter: true
+    },
+    {
+        title: '运行版本',
+        key: 'running_version',
+        render: (row) => {
+            return h('div', [
+                h(NTooltip, { trigger: 'hover', placement: 'top' }, {
+                    trigger: () => h('span', row.current.version || '—'),
+                    default: () => h('div', {
+                        style: {
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }
+                    }, [
+                        h('span', `当前版本：${row.current.version || '—'}`),
+                        h('span', `发布日期：${row.current.publish_at || '—'}`),
+                    ])
+                })
+            ])
+        }
     },
     {
         title: 'ID',
@@ -308,7 +332,11 @@ const editForm = ref<Flow>({
     version: '',
     created_at: '',
     status: '',
-    client_key: ''
+    client_key: '',
+    current: {
+        version: '',
+        publish_at: ''
+    }
 })
 
 const selectedRowKeys = ref<string[]>([])
@@ -319,7 +347,7 @@ const nameRules = [
         validator: (rule: any, value: string) => {
             if (value.length < 3) return new Error('名称不能少于 3 个字符')
             if (/\s/.test(value)) return new Error('名称不能包含空格')
-            if (!/^[\u4e00-\u9fa5a-zA-Z_][\u4e00-\u9fa5a-zA-Z0-9_]*$/.test(value)) return new Error('名称只能包含中英文字符、数字和下划线，且不能以数字开头')
+            if (!/^[\u4e00-\u9fa5a-zA-Z_-][\u4e00-\u9fa5a-zA-Z0-9_-]*$/.test(value)) return new Error('名称只能包含中英文字符、数字、下划线和短横线，且不能以数字开头')
             return true
         },
         trigger: ['input', 'blur']

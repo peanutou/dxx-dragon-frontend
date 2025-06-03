@@ -5,6 +5,7 @@
         { 'node-selected': selected }
     ]">
         <div class="flex-1 overflow-hidden">
+            <NodeName :title="nodeType ?? ''" :name="nodeName ?? ''" />
             <slot />
         </div>
         <div class="h-[48px] justify-center items-center flex" v-if="showRunButton">
@@ -39,12 +40,15 @@
 </template>
 
 <script setup lang="ts">
+import './shared-style.css'
 import { NButton } from 'naive-ui'
 import { Handle, Position } from '@vue-flow/core'
 import NodeRunButton from './NodeRunButton.vue'
+import NodeName from './NodeName.vue'
 
 defineProps<{
     nodeType?: string
+    nodeName?: string
     selected?: boolean
     showRunButton?: boolean
     leftHandles?: number

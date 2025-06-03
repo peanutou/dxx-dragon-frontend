@@ -31,15 +31,15 @@ import DataTableViewer from './DataTableViewer.vue';
 
 const props = defineProps<{
     data: any
-}>()
+}>();
 
-const parsedResult = ref<any>(props.data?.data?.node?.outputs?.result)
+const parsedResult = ref<any>(props.data)
 const path = ref<string[]>([])
 
 watch(
     () => props.data,
     (newData) => {
-        const result = newData?.data?.node?.outputs?.result
+        const result = newData
         parsedResult.value = result
         path.value = []
         if (result && typeof result === 'object' && !Array.isArray(result)) {

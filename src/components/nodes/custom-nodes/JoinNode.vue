@@ -1,20 +1,21 @@
 <template>
-    <NodeLayout
-        :node-type="props?.type"
-        :node-name="getNodeCapitalizedType(props?.data?.name || '')"
-        :selected="props.selected"
-        @run="handleRunClick"
-        :show-run-button="true"
-        :left-handles="1"
-        :right-handles="0"
-    >
-    </NodeLayout>
+    <ParentNodeLayout>
+        <NodeLayout 
+            :node-type="props?.type" 
+            :node-name="getNodeCapitalizedType(props?.data?.name || '')"
+            :selected="props.selected" 
+            @run="handleRunClick" 
+            :show-run-button="true"
+        >
+        </NodeLayout>
+    </ParentNodeLayout>
 </template>
 
 <script setup lang="ts">
 import type { NodeProps } from '@vue-flow/core'
 import { getNodeCapitalizedType } from './shared-behavior'
 import NodeLayout from '@/components/shared/NodeLayout.vue'
+import ParentNodeLayout from '@/components/shared/ParentNodeLayout.vue'
 import { useFlowStore } from '@/store/flow'
 
 const props = defineProps<NodeProps>()

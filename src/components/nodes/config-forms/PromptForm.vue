@@ -1,7 +1,7 @@
 <template>
     <n-form :model="node" label-placement="top">
         <n-form-item label="名称">
-            <n-input v-model:value="node.name" placeholder="请输入节点名称" />
+            <n-input v-model:value="node.name" placeholder="请输入节点名称" :allow-input="val => !/\s/.test(val)"/>
         </n-form-item>
 
         <n-form-item label="模型">

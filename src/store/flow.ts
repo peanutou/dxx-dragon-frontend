@@ -1,85 +1,21 @@
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
+import { Node, NodeProps, Edge } from '@vue-flow/core'
 
 /********** Flow Inputs **********/
 
-export type InputFieldType = 'string' | 'number' | 'select' | 'boolean' | 'file'
+export type FieldType = 'string' | 'number' | 'select' | 'boolean' | 'file' | 'object' | 'array' 
 export type NodeType = 'Prompt' | 'Http' | 'Regex' | 'Aggregator' | 'Excel' | 'Comparer' | 'Unknown' | 'Start' | 'End'
 
-export interface InputFieldConfig {
+export interface FieldConfig {
     name: string
-    label?: string
-    type: InputFieldType
-    required?: boolean
-    default?: string
-    options?: string[]
-}
-
-/********** Base Node **********/
-
-export interface NodeOutputs {
-    [key: string]: any
-}
-
-export interface NodeTrace {
-    [key: string]: any
-}
-
-export interface NodeTestInputs {
-    [key: string]: any
-}
-
-export interface BaseNodeConfig {
-    id: string
-    type: NodeType
-    position: { x: number; y: number }
-    data: {
-        name: string;
-        type?: NodeType;
-        depends_on?: string[];
-        inputs?: Record<string, any>;
-        outputs?: NodeOutputs;
-        outputs_schema?: string | number | boolean | object | any[] | null;
-        debug_info?: Record<string, any>;
-        frontend?: {
-            id: string
-            position: { x: number; y: number }
-            [key: string]: any
-        }
-        test_inputs?: NodeTestInputs;
-        [key: string]: any;
-    }
-    [key: string]: any
-}
-
-/********** Flow Meta **********/
-
-export interface FlowViewport {
-    x: number;
-    y: number;
-    zoom: number;
-}
-
-export interface FlowEdgeMeta {
-    source: string;
-    sourceHandle: string | null;
-    target: string;
-    targetHandle: string | null;
-    [key: string]: any;
-}
-
-export interface FlowFrontendMeta {
-    viewport: FlowViewport;
-    edges?: FlowEdgeMeta[];
-}
-
-export interface FlowMeta {
-    name?: string;
-    description?: string;
-    version?: string;
-    status?: string;
-    created_at?: string;
-    frontend: FlowFrontendMeta;
+    label: string
+    type: FieldType
+    required: boolean
+    default?: any
+    expression?: string
+    options: string[]
+    properties: FieldConfig[] | null
+    items: Record<string, any> | null
 }
 
 /********** Flow Store **********/
@@ -90,42 +26,54 @@ export enum SnapshotReason {
 
 export const useFlowStore = defineStore('flow', {
     state: () => ({
-        nodes: [] as BaseNodeConfig[],
-        edges: [] as any[],
-        inputs: [] as InputFieldConfig[],
-        outputs: [] as InputFieldConfig[],
-        variables: {} as Record<string, any>,
-        meta: {
-            frontend: {
-                viewport: { x: 0, y: 0, zoom: 1 },
-                edges: []
-            }
-        } as FlowMeta,
+        // Flow entity object
+        flowEntity: null as any,
+        // flowEntity.config
+        name: null as string | null,
+        description: null as string | null,
+        version: null as string | null,
+        created_at: null as string | null,
+        status: null as string | null,
+        nodes: [] as Node[],
+        edges: [] as Edge[],
+        inputs: [] as FieldConfig[],
+        variables: [] as FieldConfig[],
+        // variables: {} as Record<string, any>,
+        outputs: null as string | number | boolean | object | any[] | null,
+        viewport: { x: 0, y: 0, zoom: 1 },
         messages: [] as { type: string, content: string }[],
         // Undo/Redo state
         undoStack: [] as Array<{
             nodes: any[]
             edges: any[]
             inputs: any[]
+            outputs: string | number | boolean | object | any[] | null
             variables: Record<string, any>
-            meta: Record<string, any>
         }>,
         redoStack: [] as Array<{
             nodes: any[]
             edges: any[]
             inputs: any[]
+            outputs: string | number | boolean | object | any[] | null
             variables: Record<string, any>
-            meta: Record<string, any>
         }>,
         hasChanges: false as boolean,
-        currentTestNode: null as BaseNodeConfig | null,  // added for test node storage
+        currentTestNode: null as Node | null,  // added for test node storage
+        selectedNode: null as Node | null, // currently selected node in the flow
         lastSnapshot: null as {
             nodes: any[]
             edges: any[]
             inputs: any[]
+            outputs: any
             variables: Record<string, any>
-            meta: Record<string, any>
         } | null,
+        // Simulated backend context for design mode use
+        mockContext: {
+            inputs: {},
+            variables: {},
+            outputs: {} as Record<string, any>,
+            result: {},
+        }
     }),
 
     actions: {
@@ -133,15 +81,18 @@ export const useFlowStore = defineStore('flow', {
          * Reset all flow state fields to their initial values.
          */
         resetFlowState() {
+            this.flowEntity = null
+            this.viewport = { x: 0, y: 0, zoom: 1 }
             this.nodes = []
             this.edges = []
             this.inputs = []
-            this.variables = {}
-            this.meta = {
-                frontend: {
-                    viewport: { x: 0, y: 0, zoom: 1 },
-                    edges: []
-                }
+            this.variables = []
+            this.outputs = null
+            this.mockContext = {
+                inputs: {},
+                variables: {},
+                outputs: {} as Record<string, any>,
+                result: {},
             }
             this.messages = []
             this.undoStack = []
@@ -150,41 +101,49 @@ export const useFlowStore = defineStore('flow', {
             this.currentTestNode = null
             this.lastSnapshot = null
         },
-        
+        /**
+         * Convert the flow state fields to a plain object.
+         */
+        toObject() {
+            return {
+                nodes: JSON.parse(JSON.stringify(this.nodes)),
+                edges: JSON.parse(JSON.stringify(this.edges)),
+                inputs: JSON.parse(JSON.stringify(this.inputs)),
+                outputs: JSON.parse(JSON.stringify(this.outputs)),
+                variables: JSON.parse(JSON.stringify(this.variables)),
+            }
+        },
+        /**
+         * Set the flow state fields from the provided payload.
+         * @param payload The payload object containing the new state values.
+         */
         setFlowState(payload: {
             nodes?: any[]
             edges?: any[]
             inputs?: any[]
+            outputs?: string | number | boolean | object | any[] | null
             variables?: Record<string, any>
-            meta?: Record<string, any>
         }) {
             if (payload.nodes) this.nodes = JSON.parse(JSON.stringify(payload.nodes))
             if (payload.edges) this.edges = JSON.parse(JSON.stringify(payload.edges))
             if (payload.inputs) this.inputs = JSON.parse(JSON.stringify(payload.inputs))
+            if (payload.outputs) this.outputs = JSON.parse(JSON.stringify(payload.outputs))
             if (payload.variables) this.variables = JSON.parse(JSON.stringify(payload.variables))
-            if (payload.meta) this.meta = JSON.parse(JSON.stringify(payload.meta))
         },
-
         getFlowState() {
             return {
                 nodes: this.nodes,
                 edges: this.edges,
                 inputs: this.inputs,
+                outputs: this.outputs,
                 variables: this.variables,
-                meta: this.meta,
             }
         },
 
         // Save a snapshot of the current state and clear redoStack
         snapshot(reason?: SnapshotReason) {
             if (reason === SnapshotReason.INITIAL) {
-                this.lastSnapshot = {
-                    nodes: JSON.parse(JSON.stringify(this.nodes)),
-                    edges: JSON.parse(JSON.stringify(this.edges)),
-                    inputs: JSON.parse(JSON.stringify(this.inputs)),
-                    variables: JSON.parse(JSON.stringify(this.variables)),
-                    meta: JSON.parse(JSON.stringify(this.meta)),
-                }
+                this.lastSnapshot = this.toObject()
                 return
             }
             if (this.lastSnapshot !== null) {
@@ -193,13 +152,7 @@ export const useFlowStore = defineStore('flow', {
                 console.log('No last snapshot to push to undoStack')
                 return
             }
-            this.lastSnapshot = {
-                nodes: JSON.parse(JSON.stringify(this.nodes)),
-                edges: JSON.parse(JSON.stringify(this.edges)),
-                inputs: JSON.parse(JSON.stringify(this.inputs)),
-                variables: JSON.parse(JSON.stringify(this.variables)),
-                meta: JSON.parse(JSON.stringify(this.meta)),
-            }
+            this.lastSnapshot = this.toObject()
             // Limit stack size
             if (this.undoStack.length > 50) {
                 this.undoStack.shift()
@@ -207,17 +160,10 @@ export const useFlowStore = defineStore('flow', {
             this.redoStack = []
             this.hasChanges = true
         },
-
         // Undo: restore previous state from undoStack, push current to redoStack
         undo() {
             if (this.undoStack.length === 0) return
-            const current = {
-                nodes: JSON.parse(JSON.stringify(this.nodes)),
-                edges: JSON.parse(JSON.stringify(this.edges)),
-                inputs: JSON.parse(JSON.stringify(this.inputs)),
-                variables: JSON.parse(JSON.stringify(this.variables)),
-                meta: JSON.parse(JSON.stringify(this.meta)),
-            }
+            const current = this.toObject()
             this.redoStack.push(current)
             this.lastSnapshot = this.undoStack.pop() || null
             if (this.lastSnapshot) {
@@ -228,17 +174,10 @@ export const useFlowStore = defineStore('flow', {
                 this.hasChanges = false
             }
         },
-
         // Redo: restore next state from redoStack, push current to undoStack
         redo() {
             if (this.redoStack.length === 0) return
-            const current = {
-                nodes: JSON.parse(JSON.stringify(this.nodes)),
-                edges: JSON.parse(JSON.stringify(this.edges)),
-                inputs: JSON.parse(JSON.stringify(this.inputs)),
-                variables: JSON.parse(JSON.stringify(this.variables)),
-                meta: JSON.parse(JSON.stringify(this.meta)),
-            }
+            const current = this.toObject()
             this.undoStack.push(current)
             const next = this.redoStack.pop()
             if (next) {
@@ -255,7 +194,7 @@ export const useFlowStore = defineStore('flow', {
             this.messages = [];
         },
 
-        setTestNode(node: BaseNodeConfig) {
+        setTestNode(node: NodeProps) {
             this.currentTestNode = JSON.parse(JSON.stringify(node))
         },
         clearTestNode() {
@@ -263,109 +202,29 @@ export const useFlowStore = defineStore('flow', {
         },
 
         /**
-         * Update each node's data.frontend with its id and position for frontend sync.
-         */
-        dumpNodesToFrontend() {
-            this.nodes.forEach((node) => {
-                node.data.frontend = {
-                    ...(node.data.frontend || {}),
-                    id: node.id,
-                    position: node.position
-                }
-            })
-        },
-
-        /**
-         * Convert a data array to VueFlow node objects and set to this.nodes.
-         * @param dataArray Array of node data objects
-         */
-        loadDataToNodes(dataArray: any[]) {
-            this.nodes = dataArray.map((data) => {
-                const type = data.type?.charAt(0).toUpperCase() + data.type?.slice(1) || 'Unknown'
-                const id = data.frontend?.id || `${type}-${Math.random().toString(36).slice(2, 7)}`
-                const position = data.frontend?.position || { x: 0, y: 0 }
-                return {
-                    id,
-                    type,
-                    position,
-                    data
-                }
-            })
-        },
-        
-        dumpEdgesToMeta() {
-            this.meta.frontend.edges = this.edges.map(e => ({
-                id: e.id,
-                source: e.source,
-                sourceHandle: e.sourceHandle ?? null,
-                target: e.target,
-                targetHandle: e.targetHandle ?? null,
-            }))
-        },
-
-        loadEdgesFromMeta() {
-            if (Array.isArray(this.meta.frontend.edges)) {
-                this.edges = this.meta.frontend.edges.map(e => ({
-                    id: e.id,
-                    source: e.source,
-                    sourceHandle: e.sourceHandle ?? null,
-                    target: e.target,
-                    targetHandle: e.targetHandle ?? null,
-                }))
-            }
-        },
-
-        /**
-         * 清理 depends_on 字段，移除无效引用，并确保 edges 的依赖关系被同步到 depends_on。
-         */
-        sanitizeDependsOn() {
-            const allNodeNames = new Set(this.nodes.map(n => n.data?.name))
-            this.nodes.forEach(node => {
-                if (Array.isArray(node.data.depends_on)) {
-                    const original = [...node.data.depends_on]
-                    node.data.depends_on = node.data.depends_on.filter(name => {
-                        if (!allNodeNames.has(name)) {
-                            console.warn(`❌ 节点 "${node.data.name}" 的 depends_on 中无效引用已移除: ${name}`)
-                            return false
-                        }
-                        return true
-                    })
-                }
-            })
-
-            this.edges.forEach((edge: { source: string; target: string }) => {
-                const sourceNode = this.nodes.find(n => n.id === edge.source)
-                const targetNode = this.nodes.find(n => n.id === edge.target)
-
-                if (sourceNode?.data?.name && targetNode?.data) {
-                    if (!Array.isArray(targetNode.data.depends_on)) {
-                        targetNode.data.depends_on = []
-                    }
-
-                    if (!targetNode.data.depends_on.includes(sourceNode.data.name)) {
-                        console.warn(`❌ 边连接 "${sourceNode.data.name}" → "${targetNode.data.name}" 但未在 depends_on 中声明，已自动修复`)
-                        targetNode.data.depends_on.push(sourceNode.data.name)
-                    }
-                }
-            })
-        },
-
-        /**
          * Generate the payload object formatted for backend saving.
          */
         generateFlowConfigPayload(): Record<string, any> {
-            this.dumpNodesToFrontend()
-            this.dumpEdgesToMeta()
             return {
                 config: {
-                    nodes: this.nodes.map(n => n.data),
+                    name: this.name,
+                    description: this.description,
+                    version: this.version,
+                    created_at: this.created_at,
+                    status: this.status,
+                    nodes: this.nodes,
+                    edges: this.edges,
                     inputs: this.inputs,
                     variables: this.variables,
-                    ...this.meta
+                    outputs: this.outputs,
+                    viewport: {
+                        x: this.viewport.x,
+                        y: this.viewport.y,
+                        zoom: this.viewport.zoom,
+                    },
                 }
             }
         },
-
         /**
          * Initialize the store state from a flowEntity object.
          * @param flowEntity The flow entity containing a config object.
@@ -373,41 +232,62 @@ export const useFlowStore = defineStore('flow', {
         initializeFromFlowEntity(flowEntity: any) {
             if (!flowEntity?.config) return
 
+            this.resetFlowState()
+
+            this.flowEntity = flowEntity
             this.lastSnapshot = null
             const config = flowEntity.config
-
-            if (Array.isArray(config.nodes)) {
-                this.loadDataToNodes(config.nodes)
+            if (!config || typeof config !== 'object') {
+                console.error('Flow entity config is missing')
+                return
             }
 
-            if (Array.isArray(config.inputs)) {
-                this.inputs = config.inputs
-            }
+            this.name = config.name
+            this.description = config.description
+            this.version = config.version
+            this.created_at = config.created_at
+            this.status = config.status
 
-            if (config.variables && typeof config.variables === 'object') {
-                this.variables = config.variables
-            }
-
-            if (config.meta && typeof config.meta === 'object') {
-                this.meta = config.meta
+            if (!Array.isArray(config.nodes)) {
+                this.nodes = []
             } else {
-                // fallback: assign other top-level meta fields if not in `meta`
-                this.meta = {
-                    ...this.meta,
-                    name: config.name,
-                    description: config.description,
-                    version: config.version,
-                    status: config.status,
-                    created_at: config.created_at,
-                    frontend: {
-                        ...this.meta.frontend,
-                        ...(config.frontend || {})
-                    }
+                this.nodes = JSON.parse(JSON.stringify(config.nodes))
+            }
+
+            if (!Array.isArray(config.edges)) {
+                this.edges = []
+            } else {
+                this.edges = JSON.parse(JSON.stringify(config.edges))
+            }
+
+            if (!Array.isArray(config.inputs)) {
+                this.inputs = []
+            } else {
+                this.inputs = JSON.parse(JSON.stringify(config.inputs))
+            }
+
+            if (config.outputs === undefined) {
+                this.outputs = null
+            } else {
+                this.outputs = JSON.parse(JSON.stringify(config.outputs))
+            }
+
+            if (config.viewport === undefined || typeof config.viewport !== 'object') {
+                config.viewport = { x: 0, y: 0, zoom: 1 }
+            } else {
+                this.viewport = {
+                    x: config.viewport.x || 0,
+                    y: config.viewport.y || 0,
+                    zoom: config.viewport.zoom || 1,
                 }
             }
 
-            // Load edges if available
-            this.loadEdgesFromMeta()
+            if (typeof config.variables !== 'object' || config.variables === null) {
+                config.variables = {}
+            } else {
+                this.variables = JSON.parse(JSON.stringify(config.variables))
+            }
+
             setTimeout(() => {
                 this.snapshot(SnapshotReason.INITIAL)
             }, 100)

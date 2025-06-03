@@ -1,75 +1,88 @@
 <template>
     <div class="flow-layout">
         <!-- 左侧节点面板 -->
-        <div class="left-panel side-panel">
-            <n-card title="节点面板" size="small" class="h-full">
-                <n-button v-for="type in nodeTypeButtons" :key="type" class="draggable-node" text block
-                    @dragstart="onDragStart($event, type)" draggable="true">
-                    {{ type }}{{ nodeCountOfEachType[type] ? ` - ${nodeCountOfEachType[type]}` : '' }}
-                </n-button>
-            </n-card>
-        </div>
+        <n-card title="节点面板" size="small" class="left-panel side-panel">
+            <n-button v-for="type in nodeTypeButtons" :key="type" class="draggable-node" text block
+                @dragstart="onDragStart($event, type)" draggable="true">
+                {{ nodeTypeRegistry[type].label }}
+                <span v-if="nodeCountOfEachType[type]"> - {{ nodeCountOfEachType[type] }}</span>
+            </n-button>
+        </n-card>
+        <n-split direction="horizontal" :max="0.85" :min="0.15" :default-size="0.65">
+            <template #1> <!-- 中间流程画布 -->
+                <n-tabs v-model:value="activeTab" type="segment" class="canvas-panel h-full" pane-class="h-full">
+                    <n-tab-pane name="canvas" tab="流程画布" style="padding: 0px;">
 
-        <!-- 中间流程画布 -->
-        <div class="canvas-panel">
-            <n-card size="small" class="h-full" content-style="padding: 0; height: 100%;">
-                <n-tabs v-model:value="activeTab" type="segment" class="h-full" pane-style="height: 100%;">
-                    <n-tab-pane name="canvas" tab="流程画布">
-                        <div style="height: 100%;">
-                            <VueFlow ref="vueFlowRef" class="h-full" v-model:nodes="nodes" v-model:edges="edges"
-                                :node-types="nodeTypesMap" :connection-mode="ConnectionMode.Loose" :pan-on-drag="true"
-                                :default-edge-options="{
-                                    type: 'default',
-                                    markerEnd: 'arrowclosed'
-                                }" @drop="onDrop" @dragover="onDragOver" @node-click="onNodeClick"
-                                @nodes-change="onNodesChange" @edges-change="onEdgesChange" @connect="onConnect"
-                                @viewport-change="onViewportChange" :is-valid-connection="validateConnection" />
-                        </div>
+                        <VueFlow ref="vueFlowRef" v-model:nodes="nodes" v-model:edges="edges" :node-types="nodeTypesMap"
+                            :connection-mode="ConnectionMode.Loose" :pan-on-drag="true" :default-edge-options="{
+                                type: 'default',
+                                markerEnd: 'arrowclosed'
+                            }" @drop="onDrop" @dragover="onDragOver" @node-click="onNodeClick"
+                            @nodes-change="onNodesChange" @edges-change="onEdgesChange" @connect="onConnect"
+                            @viewport-change="onViewportChange" :is-valid-connection="validateConnection">
+                            <MiniMap />
+                            <Controls position="top-left">
+                                <ControlButton title="Reset Transform" @click="resetTransform">
+                                    <Icon name="reset" />
+                                </ControlButton>
+                                <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
+                                    <Icon v-if="dark" name="sun" />
+                                    <Icon v-else name="moon" />
+                                </ControlButton>
+                                <ControlButton title="Log `toObject`" @click="logToObject">
+                                    <Icon name="log" />
+                                </ControlButton>
+                            </Controls>
+                        </VueFlow>
                     </n-tab-pane>
                     <n-tab-pane name="globals" tab="全局配置" class="overflow-hidden">
                         <FlowGlobalsEditor v-model:inputs="flowInputs" v-model:variables="flowVariables" />
                     </n-tab-pane>
                 </n-tabs>
-            </n-card>
-        </div>
-
-        <!-- 右侧属性编辑器 -->
-        <div class="right-panel side-panel" v-if="activeTab === 'canvas' && showPropertyPanel">
-            <n-card title="属性编辑" size="small" class="h-full">
-                <template #header-extra>
-                    <n-button quaternary circle size="tiny" @click="showPropertyPanel = false">✕</n-button>
-                </template>
-                <template #default>
-                    <!-- Scrollable area for NodeConfigPanel with a max height -->
-                    <div style="height: calc(100vh - 120px);">
-                        <NodeConfigPanel :selected-node="selectedNode"
-                            @update:config="(data) => handleNodeUpdate(data, 'config')" />
-                    </div>
-                </template>
-            </n-card>
-        </div>
+            </template>
+            <template #2><!-- 右侧属性编辑器 -->
+                <n-card title="属性编辑" size="small" class="right-panel"
+                    v-if="activeTab === 'canvas' && showPropertyPanel">
+                    <template #header-extra>
+                        <n-button quaternary circle size="tiny" @click="showPropertyPanel = false">✕</n-button>
+                    </template>
+                    <template #default>
+                        <!-- Scrollable area for NodeConfigPanel with a max height -->
+                        <div style="height: calc(100vh - 120px);">
+                            <NodeConfigPanel :selected-node="selectedNode"
+                                @update:config="(data) => handleDataUpdate(data, 'update:node-config')" />
+                        </div>
+                    </template>
+                </n-card>
+                <n-card title="属性编辑" size="small" class="right-panel"
+                    v-else-if="activeTab === 'globals' && showPropertyPanel">
+                    <template #header-extra>
+                        <n-button quaternary circle size="tiny" @click="showPropertyPanel = false">✕</n-button>
+                    </template>
+                    <template #default>
+                        <!-- Scrollable area for NodeConfigPanel with a max height -->
+                        <div style="height: calc(100vh - 120px);">
+                            <FlowConfigPanel />
+                        </div>
+                    </template>
+                </n-card>
+            </template>
+        </n-split>
     </div>
-    <n-modal v-model:show="showYamlModal" preset="card" title="流程 YAML" style="width: 100vw; height: 100vh;"
+    <n-modal v-model:show="showYamlModal" preset="card" title="流程 JSON" style="width: 100vw; height: 100vh;"
         :content-style="{ height: '100%', overflow: 'auto' }">
-        <FlowYAMLViewer :config="{
-            nodes: nodes.map(n => ({ ...n.data, frontend: { position: n.position } })),
-            inputs: flowInputs,
-            variables: flowVariables,
-            ...flowMeta
-        }" />
+        <FlowYAMLViewer :config="flowStore.generateFlowConfigPayload().config"
+            @update:flow-config="(data) => handleDataUpdate(data, 'update:flow-config')" />
     </n-modal>
     <n-modal v-model:show="showRunnerModal" preset="card" title="流程测试" style="width: 100vw; height: 100vh;"
         :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
-        <FlowRunner :flow-id="Array.isArray(route.params.id) ? route.params.id[0] : route.params.id" :test-mode="true">
-        </FlowRunner>
+        <FlowRunner :flow-id="Array.isArray(route.params.id) ? route.params.id[0] : route.params.id" :test-mode="true"
+            @update:flow-schema="(data) => handleDataUpdate(data, 'update:flow-schema')" />
     </n-modal>
     <n-modal v-model:show="showNodeTestDialog" preset="card" title="测试运行" style="width: 100vw; height: 100vh;"
         :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
-        <NodeTestDialog 
-            :node-data="testNodeData" 
-            @update:schema="(data) => handleNodeUpdate(data, 'schema')"
-            @update:save-test="(data) => handleNodeUpdate(data, 'test')"
-            @update:clear-test="(data) => handleNodeUpdate(data, 'clear')" />
+        <NodeTestDialog v-if="testNodeData" :current-test-node="testNodeData"
+            @update:node-schema="(data) => handleDataUpdate(data, 'update:node-schema')" />
     </n-modal>
 </template>
 
@@ -77,16 +90,33 @@
 import { TenantSpaceAPI } from '@/apis/endpoints'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
-import type { NodeChange, EdgeChange, Connection } from '@vue-flow/core';
+import '@vue-flow/minimap/dist/style.css'
+import type { NodeProps, NodeChange, EdgeChange, Connection } from '@vue-flow/core';
 import { ref, computed, onMounted, markRaw, h, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+// VueFlow 相关
 import { VueFlow, ConnectionMode, Node } from '@vue-flow/core'
+import { MiniMap } from '@vue-flow/minimap'
+import { ControlButton, Controls } from '@vue-flow/controls'
+import Icon from './FlowEditorIcon.vue'
+const dark = ref(false)
+function resetTransform() {
+    vueFlowRef.value?.setViewport?.({ x: 0, y: 0, zoom: 1 })
+}
+function toggleDarkMode() {
+    dark.value = !dark.value
+}
+function logToObject() {
+    console.log('toObject', vueFlowRef.value?.toObject?.())
+}
+// Pinia 相关
 import { useNavbarStore } from '@/store/navbar'
 import { useFlowStore } from '@/store/flow'
 import type { NodeType } from '@/store/flow'
 import { storeToRefs } from 'pinia'
-import { NButton, NTag, NCard } from 'naive-ui'
+import { NButton, NTag, NCard, NSplit, NTabs, NTabPane } from 'naive-ui'
 import request from '@/utils/axios'
+import FlowConfigPanel from './FlowConfigPanel.vue';
 import NodeConfigPanel from '@/components/nodes/NodeConfigPanel.vue'
 import PromptNode from '@/components/nodes/custom-nodes/PromptNode.vue'
 import HTTPNode from '@/components/nodes/custom-nodes/HTTPNode.vue'
@@ -96,16 +126,16 @@ import ExcelNode from '@/components/nodes/custom-nodes/ExcelNode.vue';
 import ComparerNode from '@/components/nodes/custom-nodes/ComparerNode.vue';
 import StartNode from '@/components/nodes/custom-nodes/StartNode.vue'
 import EndNode from '@/components/nodes/custom-nodes/EndNode.vue'
+import JoinNode from '@/components/nodes/custom-nodes/JoinNode.vue';
+import ForEachNode from '@/components/nodes/custom-nodes/ForEachNode.vue';
 import FlowGlobalsEditor from './FlowGlobalsEditor.vue'
 import FlowYAMLViewer from './FlowYAMLViewer.vue'
 import FlowRunner from './FlowRunner.vue'
 import NodeTestDialog from '@/components/nodes/test-run/NodeTestDialog.vue'
 import { generateShortId } from '@/utils/uid'
 
-
 // 声明 flowDefinition
 const flowDefinition = ref<any>(null)
-
 const showYamlModal = ref(false)
 const showRunnerModal = ref(false)
 const statusOptions = [
@@ -113,7 +143,27 @@ const statusOptions = [
     { label: '已发布', value: 'published' },
     { label: '已弃用', value: 'deprecated' }
 ]
-const nodeTypeButtons = ['Start', 'End','Prompt', 'Http', 'Regex', 'Aggregator', 'Excel', 'Comparer']
+const nodeTypeRegistry: Record<string, { label: string; allowNested: boolean; canContainChildren?: boolean }> = {
+    Start: { label: 'Start', allowNested: false },
+    End: { label: 'End', allowNested: false },
+    Prompt: { label: 'Prompt', allowNested: true },
+    Http: { label: 'Http', allowNested: true },
+    Regex: { label: 'Regex', allowNested: true },
+    Aggregator: { label: 'Aggregator', allowNested: true },
+    Excel: { label: 'Excel', allowNested: true },
+    Comparer: { label: 'Comparer', allowNested: true },
+    Join: { label: 'Join', allowNested: true, canContainChildren: true },
+    ForEach: { label: 'ForEach', allowNested: true, canContainChildren: true },
+}
+const nodeDefaults = ref<Record<string, any>>({})
+const nodeTypeButtons = Object.keys(nodeTypeRegistry)
+const isNestedNodeType = (type: string): boolean => {
+    const nodeType = nodeTypeRegistry[type]
+    if (nodeType && 'canContainChildren' in nodeType && (nodeType as any).canContainChildren) {
+        return true
+    }
+    return false
+}
 const nodeCountOfEachType = computed(() => {
     const countMap: Record<string, number> = {}
     nodes.value.forEach(node => {
@@ -133,14 +183,20 @@ const nodeTypesMap = {
     Comparer: markRaw(ComparerNode),
     Start: markRaw(StartNode),
     End: markRaw(EndNode),
+    Join: markRaw(JoinNode),
+    ForEach: markRaw(ForEachNode),
+    // Add more node types as needed
 }
 const flowStore = useFlowStore()
-const { undoStack, redoStack, hasChanges, inputs, variables, nodes, edges } = storeToRefs(flowStore)
+const {
+    undoStack, redoStack, hasChanges, flowEntity, inputs,
+    variables, outputs, nodes, edges, viewport, selectedNode
+} = storeToRefs(flowStore)
+
 // 为了语义清晰，使用 flow* 前缀作为 storeToRefs 的别名
 const flowInputs = inputs
 const flowVariables = variables
 let dragOffset = { x: 0, y: 0 }
-const selectedNode = ref<Node | undefined>(undefined)
 // Track if nodes are being dragged
 const isDraggingNodes = ref(false)
 const showPropertyPanel = ref(true)
@@ -150,7 +206,7 @@ const route = useRoute()
 const isRestoringSnapshot = ref(false)
 
 // Node test dialog control
-const testNodeData = ref<any>(null)
+const testNodeData = ref<NodeProps | null>(null)
 const showNodeTestDialog = ref(false)
 
 // Watch for changes in currentTestNode and display the dialog when set
@@ -161,13 +217,13 @@ watch(() => flowStore.currentTestNode, async (node) => {
             const saved = await handleSave();
             // Only open modal if save succeeded and no unsaved changes remain
             if (saved && !hasChanges.value) {
-                testNodeData.value = node
+                testNodeData.value = node as unknown as NodeProps
                 showNodeTestDialog.value = true
             }
         }
         else {
             // No unsaved changes, directly open the dialog
-            testNodeData.value = node
+            testNodeData.value = node as unknown as NodeProps
             showNodeTestDialog.value = true
         }
     }
@@ -196,8 +252,6 @@ watch(flowVariables, () => {
     snapshot()
 }, { deep: true })
 
-const { meta: flowMeta } = storeToRefs(flowStore)
-// removed invalid import of VueFlowInstance; will use InstanceType<typeof VueFlow> instead
 
 const vueFlowRef = ref<InstanceType<typeof VueFlow> | null>(null);
 const navbarStore = useNavbarStore()
@@ -229,12 +283,7 @@ function snapshot() {
 }
 
 function onViewportChange({ x, y, zoom }: { x: number; y: number; zoom: number }) {
-    // 在这里可以保存视口状态到 flowMeta
-    // 不支持撤销，仅在保存时进行存储
-    flowMeta.value.frontend = {
-        ...(flowMeta.value.frontend || {}),
-        viewport: { x, y, zoom }
-    }
+    flowStore.viewport = { x, y, zoom }
 }
 
 
@@ -248,7 +297,6 @@ function onNodesChange(changes: NodeChange[]) {
     const hasDimensionsChange = changes.some(change => change.type === 'dimensions')
 
     // console.log('onNodesChange', hasRemoval, hasPositionChange, hasSelectionChange, hasDimensionsChange, changes)
-
     // Set dragging state based on position change
     if (hasPositionChange) {
         if ('dragging' in changes[0] && changes[0].dragging) {
@@ -261,19 +309,6 @@ function onNodesChange(changes: NodeChange[]) {
     }
 
     if (hasRemoval) {
-        changes.forEach(change => {
-            if (change.type === 'remove' && change.id) {
-                const removedNode = nodes.value.find(n => n.id === change.id)
-                if (!removedNode?.data?.name) return
-
-                const removedName = removedNode.data.name
-                nodes.value.forEach(node => {
-                    if (Array.isArray(node.data.depends_on)) {
-                        node.data.depends_on = node.data.depends_on.filter(name => name !== removedName)
-                    }
-                })
-            }
-        })
         // Node removal, save the state
         needsSnapshot.value = true
         /* 
@@ -286,7 +321,7 @@ function onNodesChange(changes: NodeChange[]) {
                 onNodesChange(removal true) ->
                 onEdgesChange([空数组]).
         */
-        selectedNode.value = undefined
+        selectedNode.value = null
     }
 }
 
@@ -294,26 +329,11 @@ function onNodesChange(changes: NodeChange[]) {
 function onEdgesChange(changes: EdgeChange[]) {
     const hasRemoval = changes.some(change => change.type === 'remove')
     const isEmptyChange = changes.length === 0;
-
-    // console.log('onEdgesChange', hasRemoval, changes)
-
     if (hasRemoval) {
-        // 查找所有目标节点
-        changes.forEach(change => {
-            if (change.type === 'remove' && change.id) {
-                const sourceId = change.source
-                const targetId = change.target
-                const sourceNode = nodes.value.find(n => n.id === sourceId)
-                const targetNode = nodes.value.find(n => n.id === targetId)
-                if (sourceNode && targetNode && Array.isArray(targetNode.data.depends_on)) {
-                    targetNode.data.depends_on = targetNode.data.depends_on.filter(name => name !== sourceNode.data.name)
-                }
-            }
-        })
         /* 
             如果是因为删除节点导致的，
             边的删除和节点删除会记录两次快照。
-         */
+        */
         needsSnapshot.value = true
     }
     // Only snapshot if all changes have been processed, i.e. empty changes array
@@ -322,32 +342,46 @@ function onEdgesChange(changes: EdgeChange[]) {
             This indicates that the changes have been processed 
             and no further changes are expected.
         */
-        // Save the current state to the undo stack
         snapshot()
         needsSnapshot.value = false
     }
 }
 
 // 接收节点的 Form 更新事件
-function handleNodeUpdate(updatedData: Record<string, any>, eventType?: string) {
-    if (!selectedNode.value) return
+function handleDataUpdate(updatedData: any, eventType?: string) {
 
     snapshot()
 
-    if (eventType === 'schema') {
-        selectedNode.value.data.outputs_schema = updatedData
+    /* Flow Related */
+    if (eventType === 'update:flow-schema') {
+        outputs.value = updatedData
     }
-    else if (eventType === 'test') {
-        selectedNode.value.data.test_inputs = updatedData.test_inputs
-        selectedNode.value.data.debug_info = updatedData.debug_info
-        selectedNode.value.data.outputs = updatedData.outputs
+    else if (eventType === 'update:flow-config') {
+        handleFlowUpload(updatedData)
     }
-    else if (eventType === 'config') {
+    /* Node Related */
+    else if (!selectedNode.value) {
+        return
+    }
+    else if (eventType === 'update:node-schema') {
+        selectedNode.value.data.outputs = updatedData
+    }
+    else if (eventType === 'update:node-name') {
+        const newName = updatedData.name?.trim()
+        const oldName = selectedNode.value.data.name
+        const currentId = selectedNode.value.id
+
+        const isDuplicate = nodes.value.some(n =>
+            n.id !== currentId && n.data?.name === newName
+        )
+        if (isDuplicate) {
+            window.$message?.error?.('名称已存在，请使用唯一名称')
+            return
+        }
+        selectedNode.value.data.name = newName
+    }
+    else if (eventType === 'update:node-config') {
         selectedNode.value.data = { ...selectedNode.value.data, ...updatedData }
-    }
-    else if (eventType === 'clear') {
-        selectedNode.value.data.debug_info = {}
-        selectedNode.value.data.outputs = {}
     }
     else {
         const newName = updatedData.name?.trim()
@@ -357,27 +391,16 @@ function handleNodeUpdate(updatedData: Record<string, any>, eventType?: string) 
         const isDuplicate = nodes.value.some(n =>
             n.id !== currentId && n.data?.name === newName
         )
-
         if (isDuplicate) {
             window.$message?.error?.('名称已存在，请使用唯一名称')
             return
         }
-
         selectedNode.value.data = { ...updatedData }
-        // 更新所有节点的 depends_on 中的引用
-        nodes.value.forEach(node => {
-            if (Array.isArray(node.data?.depends_on)) {
-                node.data.depends_on = node.data.depends_on.map(dep => dep === oldName ? newName : dep)
-            }
-        })
     }
 }
 
-async function handleSave() {
+async function handleSave(): Promise<boolean> {
     const flowId = route.params.id as string
-
-    // 清理无效的 depends_on 引用
-    flowStore.sanitizeDependsOn()
 
     const confirmed = await new Promise((resolve) => {
         window.$dialog?.warning({
@@ -394,22 +417,64 @@ async function handleSave() {
     }
     try {
         const res = await request.put(TenantSpaceAPI.flows.config(flowId), {
-            ...flowStore.generateFlowConfigPayload()
+            ...flowStore.generateFlowConfigPayload(),
         })
-        window.$message?.success('保存成功')
-
-        // Update flowMeta from backend response if available
-        const updated = res?.data?.data
-        if (updated) {
-            flowStore.initializeFromFlowEntity(updated)
+        if (res?.data?.success) {
+            window.$message?.success('保存成功')
+            const updated = res?.data?.data
+            if (updated) {
+                flowStore.initializeFromFlowEntity(updated)
+            }
+            hasChanges.value = false
+            return true
+        } else {
+            window.$message?.error(res?.data?.message || '保存失败')
+            return false
         }
 
-        hasChanges.value = false
-        return true
     } catch (err) {
         window.$message?.error('保存失败')
         console.error(err)
         return false
+    }
+}
+
+async function handleFlowUpload(updatedData: any) {
+    const flowId = route.params.id as string
+
+    const confirmed = await new Promise((resolve) => {
+        window.$dialog?.warning({
+            title: '上传确认',
+            content: '流程 ID（flow_id） 、创建时间（created_at） 和状态（status）字段将被保持不变，是否继续？',
+            positiveText: '确认保存',
+            negativeText: '取消',
+            onPositiveClick: () => resolve(true),
+            onNegativeClick: () => resolve(false)
+        })
+    })
+
+    if (!confirmed) {
+        return
+    }
+
+    try {
+        console.log('Uploading flow config:', updatedData)
+        const res = await request.put(TenantSpaceAPI.flows.config(flowId), {
+            config: updatedData
+        })
+        if (res?.data?.success) {
+            window.$message?.success('上传成功')
+            const updated = res?.data?.data
+            if (updated) {
+                flowStore.initializeFromFlowEntity(updated)
+            }
+            hasChanges.value = false
+        } else {
+            window.$message?.error(res?.data?.message || '上传失败')
+        }
+    } catch (err) {
+        window.$message?.error('上传失败')
+        console.error(err)
     }
 }
 
@@ -447,6 +512,8 @@ function redo() {
 
 onMounted(async () => {
     const flowId = route.params.id as string
+    selectedNode.value = null
+    testNodeData.value = null
     if (flowId) {
         try {
             const res = await request.get(TenantSpaceAPI.flows.get(flowId))
@@ -454,17 +521,25 @@ onMounted(async () => {
             if (flowEntity?.config) {
                 flowDefinition.value = flowEntity
                 flowStore.initializeFromFlowEntity(flowEntity)
-
                 // Restore viewport
-                const viewport = flowMeta.value.frontend?.viewport
                 if (viewport) {
-                    vueFlowRef.value?.setViewport?.(viewport)
+                    vueFlowRef.value?.setViewport?.(viewport.value)
                 }
             }
         } catch (e) {
             window.$message?.error?.('加载流程失败')
         }
     }
+
+    await request.get(
+        TenantSpaceAPI.flows.nodeDefaults
+    ).then(res => {
+        nodeDefaults.value = res.data.data
+        console.log('节点默认配置:', nodeDefaults.value)
+    }).catch(err => {
+        console.error('获取节点默认配置失败:', err)
+        window.$message?.error?.('获取节点默认配置失败')
+    })
 
     navbarStore.setActions([
         () =>
@@ -494,7 +569,7 @@ onMounted(async () => {
             h(NButton, {
                 size: 'small',
                 onClick: () => (showYamlModal.value = true)
-            }, { default: () => '查看 YAML' }),
+            }, { default: () => '查看 JSON' }),
         () =>
             h(NButton, {
                 size: 'small',
@@ -514,17 +589,17 @@ onMounted(async () => {
                 style: 'margin-left: 8px;'
             }, {
                 default: () => {
-                    const match = statusOptions.find(opt => opt.value === flowMeta.value.status)
-                    return match ? match.label : flowMeta.value.status || ''
+                    const match = statusOptions.find(opt => opt.value === flowEntity.value.status)
+                    return match ? match.label : flowEntity.value.status || ''
                 }
             }),
         () =>
             h(NTag, {
                 type: 'default',
                 size: 'small',
-                onClick: () => console.log(undoStack.value.length, nodes.value),
+                onClick: () => console.log(undoStack.value.length, nodes.value, edges.value, useFlowStore().mockContext),
                 style: ''
-            }, { default: () => flowMeta.value.name || '未命名流程' }),
+            }, { default: () => flowEntity.value.name || '未命名流程' }),
     ])
 })
 
@@ -551,7 +626,7 @@ async function publishFlow() {
     }
 }
 
-function getCanvasDropPosition(event: DragEvent) {
+function getParentDropPosition(event: DragEvent) {
     const bounds = (event.target as HTMLElement).getBoundingClientRect()
     const viewport = vueFlowRef.value?.getViewport?.()
     const zoom = viewport?.zoom || 1
@@ -563,17 +638,18 @@ function getCanvasDropPosition(event: DragEvent) {
     }
 }
 
-function createMarker(x: number, y: number, color: string) {
-    const marker = document.createElement('div')
-    marker.id = 'marker123'
-    marker.style.position = 'absolute'
-    marker.style.width = '10px'
-    marker.style.height = '10px'
-    marker.style.backgroundColor = color
-    marker.style.left = `${x}px`
-    marker.style.top = `${y}px`
-    marker.style.zIndex = '1000'
-    document.body.appendChild(marker)
+function getParentNodeId(event: DragEvent): string | null {
+    const target = event.target as HTMLElement
+    const parentNode = target.closest('.vue-flow__node')
+    if (parentNode) {
+        return parentNode.getAttribute('data-id') || null
+    }
+    return null
+}
+
+function getNodeTypeById(nodeId: string): string | null {
+    const node = nodes.value.find(n => n.id === nodeId)
+    return node ? node.type as string : null
 }
 
 function onDragStart(event: DragEvent, nodeType: string) {
@@ -593,95 +669,65 @@ function onDragOver(event: DragEvent) {
 async function onDrop(event: DragEvent) {
     // 检查被投放的组件是否是合法的 type
     const type = event.dataTransfer?.getData('node/type')
-    if (!type) return
+    if (!type || !nodeTypeRegistry[type]) {
+        console.warn('无效的节点类型:', type)
+        return
+    }
+    // 如果是拖拽到节点上，获取节点的 ID
+    const parentNodeId = getParentNodeId(event)
+    const parentNodeType = getNodeTypeById(parentNodeId || '') || null
+    // console.log('onDrop', type, event.type, event.target, parentNodeId, parentNodeType)
+    if (parentNodeId && !isNestedNodeType(parentNodeType || '')) {
+        console.warn('不能将节点放在此类型的节点下:', parentNodeType)
+        return
+    }
 
-    const position = getCanvasDropPosition(event)
+    const position = getParentDropPosition(event)
     const uniqueName = `${type.toLowerCase()}_${generateShortId()}`
-    let defaultNodeData: Record<string, any> = {
-        name: uniqueName,
-        type: type,
-        frontend: {
-            id: uniqueName, label: `${type} 节点`,
-        }
-    }
 
-    function generateDefaultValue(schema: any, definitions: Record<string, any>): any {
-
-        /** 必须先找 'default' 再查找 '$ref' **/
-
-        if ('default' in schema) {
-            return schema.default
-        }
-
-        if ('$ref' in schema) {
-            const refKey = schema['$ref'].replace(/^#\/\$defs\//, '')
-            const def = definitions[refKey]
-            return generateDefaultValue(def, definitions)
-        }
-
-        if (schema.type === 'object' && schema.properties) {
-            const obj: Record<string, any> = {}
-            for (const [key, propSchema] of Object.entries(schema.properties)) {
-                obj[key] = generateDefaultValue(propSchema, definitions)
-            }
-            return obj
-        }
-
-        if (schema.type === 'array') {
-            return []
-        }
-
-        if (schema.type === 'string') return ''
-        if (schema.type === 'number') return 0
-        if (schema.type === 'boolean') return false
-
-        return null
-    }
-
-    try {
-        const res = await request.get(TenantSpaceAPI.flows.nodeTypes)
-        const schema = res?.data?.data?.[type]
-        // console.log('节点类型:', type, schema)
-        if (schema?.properties) {
-            const definitions = schema.$defs || {}
-            for (const [key, prop] of Object.entries(schema.properties)) {
-                if (key in defaultNodeData) continue
-                defaultNodeData[key] = generateDefaultValue(prop, definitions)
-            }
-        }
-        // console.log('默认节点数据:', defaultNodeData)
-
-    } catch (err) {
-        console.warn('无法加载默认节点配置:', err)
-    }
-    snapshot()
-    nodes.value.push({
+    // 1. 找到是否有目标 Join 节点
+    const defaultNodeData: Node = {
         id: uniqueName,
-        type: type as NodeType, // This should already match keys like 'Prompt', 'HTTP', or 'Regex'
-        position,
-        data: { ...defaultNodeData, name: uniqueName }
-    })
+        type: type as NodeType,
+        position: position,
+        parentNode: parentNodeId || undefined,
+        extent: parentNodeId ? 'parent' : undefined,
+        data: {
+            ...nodeDefaults.value[type].data || {},
+            name: uniqueName,
+        }
+    }
+
+    snapshot()
+    nodes.value.push(defaultNodeData)
 }
 
 function onConnect(params: { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }) {
     const sourceNode = nodes.value.find((n) => n.id === params.source)
     const targetNode = nodes.value.find((n) => n.id === params.target)
     if (!sourceNode?.data?.name || !targetNode?.data?.name) {
+        console.warn('源节点或目标节点缺少名称:', sourceNode, targetNode)
         return
     }
 
     snapshot()
+    const edgeId = `e${params.source}-${params.sourceHandle}-${params.target}-${params.targetHandle}`
+    const existingEdge = edges.value.find((e) => e.id === edgeId)
+    // Edge already exists, no need to add it again
+    if (existingEdge) {
+        console.log('边已存在:', edgeId)
+        return
+    }
+    // create a next data
     edges.value.push({
         ...params,
-        id: `e${params.source}-${params.sourceHandle}-${params.target}-${params.targetHandle}`
+        id: edgeId,
+        data: {
+            on: ["success"],
+            condition: "",
+            description: "",
+        },
     })
-
-    if (!Array.isArray(targetNode.data.depends_on)) {
-        targetNode.data.depends_on = []
-    }
-    if (!targetNode.data.depends_on.includes(sourceNode.data.name)) {
-        targetNode.data.depends_on.push(sourceNode.data.name)
-    }
 }
 
 function onNodeClick(event: { node: Node }) {
@@ -691,15 +737,56 @@ function onNodeClick(event: { node: Node }) {
 
 // 验证连接是否有效：只允许 sourceHandle 以 'right' 开头且 targetHandle 以 'left' 开头
 function validateConnection(connection: Connection): boolean {
-    // console.log('validateConnection', connection)
-    return (
+    // Only allow sourceHandle starting with 'right' and targetHandle starting with 'left'
+    const isValidHandles =
         !!connection.sourceHandle?.startsWith('right') &&
-        !!connection.targetHandle?.startsWith('left')
-    )
+        !!connection.targetHandle?.startsWith('left');
+    if (!isValidHandles) return false;
+    return true;
 }
+
 </script>
 
 <style scoped>
+/* Toolbar */
+:deep(.vue-flow__controls) {
+    box-shadow: 0 0 2px 1px var(--n-color-popover);
+    display: flex;
+}
+
+:deep(.vue-flow__controls-button) {
+    background-color: var(--n-text-color);
+    border-bottom: 1px solid var(--n-border-color);
+    box-sizing: content-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    user-select: none;
+    padding: 5px;
+}
+
+:deep(.vue-flow__controls-button) svg {
+    width: 100%;
+    max-width: 12px;
+    max-height: 12px;
+}
+
+:deep(.vue-flow__controls-button:hover) {
+    background: var(--n-bar-color);
+}
+
+:deep(.vue-flow__controls-button:disabled) {
+    pointer-events: none;
+}
+
+:deep(.vue-flow__controls-button:disabled) svg {
+    fill-opacity: 0.4;
+}
+
+/* Component */
 .h-full {
     height: 100%;
 }
@@ -709,18 +796,16 @@ function validateConnection(connection: Connection): boolean {
     height: 100%;
 }
 
+.left-panel {
+    width: 200px;
+}
+
 .side-panel {
     flex: 0 0 auto;
 }
 
-.left-panel {
-    width: 260px;
-    /* border-right: 1px solid #eee; */
-}
-
 .right-panel {
-    width: 400px;
-    /* border-left: 1px solid #eee; */
+    width: auto;
 }
 
 .canvas-panel {
@@ -737,5 +822,14 @@ function validateConnection(connection: Connection): boolean {
     border-radius: 4px;
     cursor: grab;
     user-select: none;
+}
+
+
+/* Minimap */
+.vue-flow__minimap {
+    transform: scale(75%);
+    transform-origin: bottom right;
+    background: var(--n-color-popover);
+    opacity: 0.6;
 }
 </style>

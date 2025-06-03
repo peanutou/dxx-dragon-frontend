@@ -1,5 +1,5 @@
 <template>
-    <component :is="formComponent" :node="node" />
+    <component :is="formComponent" :node="data" />
 </template>
 
 <script setup lang="ts">
@@ -12,16 +12,19 @@ import ExcelForm from './config-forms/ExcelForm.vue'
 import ComparerForm from './config-forms/ComparerForm.vue'
 import StartForm from './config-forms/StartForm.vue'
 import EndForm from './config-forms/EndForm.vue'
+import JoinForm from './config-forms/JoinForm.vue'
+import ForEachForm from './config-forms/ForEachForm.vue'
 
 const props = defineProps<{
-    node: Record<string, any>
+    type: string,
+    data: Record<string, any>
 }>()
 
 const formComponent = computed(() => {
-    if (!props.node) {
+    if (!props.type) {
         return null
     }
-    switch (props.node?.type) {
+    switch (props.type) {
         case 'Prompt':
             return PromptForm
         case 'Http':
@@ -38,6 +41,11 @@ const formComponent = computed(() => {
             return StartForm
         case 'End':
             return EndForm
+        case 'Join':
+            return JoinForm
+        case 'ForEach':
+            return ForEachForm
+        // Add more cases as needed for other node types
         default:
             return null
     }

@@ -1,4 +1,5 @@
 import { config } from "process"
+import { LiteralType } from "typescript"
 
 export const PlatformTenantAPI = {
     list: '/platform/tenants',
@@ -41,6 +42,7 @@ export const TenantSpaceAPI = {
         list: '/space/flows',
         create: '/space/flows',
         nodeTypes: '/space/flows/node-types',
+        nodeDefaults: '/space/flows/node-defaults',
         get: (id: string) => `/space/flows/${id}`,
         update: (id: string) => `/space/flows/${id}`,
         delete: (id: string) => `/space/flows/${id}`,
@@ -48,9 +50,12 @@ export const TenantSpaceAPI = {
         publish: (id: string) => `/space/flows/${id}/publish`,
         config: (id: string) => `/space/flows/${id}/config`,
         run: (id: string) => `/space/flows/${id}/run`,
-        runDebug: (id: string) => `/space/flows/${id}/run-debug`,
         runTest: (id: string) => `/space/flows/${id}/test`,
         testNode: (id: string) => `/space/flows/${id}/test-node`,
+        refreshClientKey: (id: string) => `/space/flows/${id}/refresh-client-key`,
+        endpoint: (id: string) => `/space/flows/${id}/endpoint`,
+        openapi: (id: string, mode: 'json' | 'yaml') => `/space/flows/${id}/openapi?mode=${mode}`,
+        functionCall: (id: string) => `/space/flows/${id}/function-call`,
     },
     files: {
         upload: '/space/files/upload',

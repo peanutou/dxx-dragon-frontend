@@ -60,3 +60,25 @@ function confirmSchema() {
     }
 }
 </script>
+
+<style scoped>
+:deep(.vjs-tree-node) {
+    font-size: 12px;
+}
+
+:deep(.vjs-tree-node .vjs-indent-unit) {
+    width: 2em;
+    font-size: 12px;
+}
+
+:deep(.vue-json-pretty .vjs-tree-node.is-selected) {
+    background-color: #ffe58f !important;
+    /* 自定义背景色 */
+    color: #000000 !important;
+    /* 自定义文字颜色 */
+}
+
+:deep(.vjs-tree-node .vjs-key) {
+    white-space: nowrap;
+}
+</style>

@@ -1,7 +1,7 @@
 <template>
     <n-form :model="node" label-placement="top">
         <n-form-item label="名称">
-            <n-input v-model:value="node.name" placeholder="请输入节点名称" />
+            <n-input v-model:value="node.name" placeholder="请输入节点名称" :allow-input="val => !/\s/.test(val)"/>
         </n-form-item>
         <n-form-item label="Target Table">
             <div class="flex gap-2 w-full">
@@ -23,28 +23,82 @@
                 expression: '',
             })" show-sort-button>
                 <template #default="{ value: rule, index }">
-                    <n-space vertical :size="12">
-                        <n-select v-model:value="rule.mode" :options="[
-                            { label: 'Individual', value: 'individual' },
-                            { label: 'Individual Group', value: 'individual_group' },
-                            { label: 'Group', value: 'group' },
-                        ]" placeholder="选择运行模式" />
-                        <div v-if="rule.mode === 'individual' || rule.mode === 'individual_group'" class="flex gap-2">
-                            <n-input v-model:value="rule.expression" placeholder="Expression" />
-                            <n-button text type="primary" @click="() => { onEdit(index, 'expression') }">编辑</n-button>
-                        </div>
-                        <div v-else-if="rule.mode === 'group'" class="flex flex-col gap-2">
-                            <div class="flex gap-2">
-                                <n-input v-model:value="rule.target_expression" placeholder="Target Expression" />
-                                <n-button text type="primary"
-                                    @click="() => { onEdit(index, 'target_expression') }">编辑</n-button>
-                            </div>
-                            <div class="flex gap-2">
-                                <n-input v-model:value="rule.input_expression" placeholder="Input Expression" />
-                                <n-button text type="primary"
-                                    @click="() => { onEdit(index, 'input_expression') }">编辑</n-button>
-                            </div>
-                        </div>
+                    <n-space vertical class="w-full border-b pb-2 border-b-1 border-b-gray-300">
+                        <n-grid :cols="3" x-gap="8" y-gap="8" class="input-grid">
+                            <n-gi>
+                                <n-checkbox :checked="rule.status === 'enabled'" class="mr-2"
+                                    @change="(value) => { rule.status = value ? 'enabled' : 'disabled' }"></n-checkbox>
+                            </n-gi>
+                            <n-gi>
+                                <n-input-group class="flex items-center">
+                                    <n-input-group-label size="tiny" class="input-label">
+                                        Mode
+                                    </n-input-group-label>
+                                    <n-select v-model:value="rule.mode" :options="[
+                                        { label: 'Individual', value: ComparisonMode.INDIVIDUAL },
+                                        { label: 'Group', value: ComparisonMode.GROUP },
+                                        { label: 'Individual Group', value: ComparisonMode.INDIVIDUAL_GROUP },
+                                    ]" placeholder="选择运行模式" style="width: 220px;" size="tiny" />
+                                </n-input-group>
+                            </n-gi>
+                            <n-gi>
+                                <n-input-group class="flex items-center">
+                                    <n-input-group-label size="tiny" class="input-label">
+                                        Usage
+                                    </n-input-group-label>
+                                    <n-select v-model:value="rule.usage" :options="[
+                                        { label: 'Include', value: ResultMode.INCLUDE },
+                                        { label: 'Exclude', value: ResultMode.EXCLUDE },
+                                    ]" placeholder="选择运行模式" size="tiny" />
+                                </n-input-group>
+                            </n-gi>
+                            <n-gi class="input-expression">
+                                <n-input-group>
+                                    <n-input-group-label size="tiny" class="input-label">Desc</n-input-group-label>
+                                    <n-input v-model:value="rule.description" placeholder="请输入规则描述" size="tiny"
+                                        type="text" />
+                                </n-input-group>
+                            </n-gi>
+                            <n-gi class="input-expression">
+                                <div v-if="rule.mode === 'individual' || rule.mode === 'individual_group'"
+                                    class="flex gap-2">
+                                    <n-input-group class="flex items-center">
+                                        <n-input-group-label size="tiny" class="input-label">
+                                            Expr
+                                        </n-input-group-label>
+                                        <n-input v-model:value="rule.expression" placeholder="Expression" size="tiny" />
+                                        <n-button type="primary" @click="() => { onEdit(index, 'expression') }"
+                                            size="tiny">编辑</n-button>
+                                    </n-input-group>
+                                </div>
+                                <div v-else-if="rule.mode === 'group'" class="flex flex-col gap-2">
+                                    <div class="flex gap-2">
+                                        <n-input-group class="flex items-center">
+                                            <n-input-group-label size="tiny" class="input-label">
+                                                Expr
+                                            </n-input-group-label>
+                                            <n-input v-model:value="rule.target_expression"
+                                                placeholder="Target Expression" size="tiny" />
+                                            <n-button type="primary"
+                                                @click="() => { onEdit(index, 'target_expression') }"
+                                                size="tiny">编辑</n-button>
+                                        </n-input-group>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <n-input-group class="flex items-center">
+                                            <n-input-group-label size="tiny" class="input-label">
+                                                Expr
+                                            </n-input-group-label>
+                                            <n-input v-model:value="rule.input_expression"
+                                                placeholder="Input Expression" size="tiny" />
+                                            <n-button type="primary"
+                                                @click="() => { onEdit(index, 'input_expression') }"
+                                                size="tiny">编辑</n-button>
+                                        </n-input-group>
+                                    </div>
+                                </div>
+                            </n-gi>
+                        </n-grid>
                     </n-space>
                 </template>
             </n-dynamic-input>
@@ -70,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { NForm, NFormItem, NSelect, NInput, NDynamicInput, NSpace, NButton } from 'naive-ui'
+import { NForm, NFormItem, NSelect, NInput, NDynamicInput, NInputGroup, NInputGroupLabel, NDynamicTags, NCheckbox, NSwitch, NButton, NGrid, NGi } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useFlowStore } from '@/store/flow'
 import SchemaInput from '@/components/shared/SchemaInput.vue'
@@ -79,11 +133,18 @@ import ExpressionBuilder from '@/components/expression-builder/ExpressionBuilder
 // Comparison mode mirror of backend enum
 enum ComparisonMode {
     GROUP = 'group',
-    INDIVIDUAL = 'individual'
+    INDIVIDUAL = 'individual',
+    INDIVIDUAL_GROUP = 'individual_group',
+}
+
+enum ResultMode {
+    INCLUDE = 'include',
+    EXCLUDE = 'exclude',
 }
 
 // Comparer node configuration interface
 interface ComparerNodeConfig /* extends BaseNodeConfig */ {
+    id: string
     type: string
     name: string
     target_table: string
@@ -128,22 +189,26 @@ const flowStore = useFlowStore()
 
 // Computed options for table selection populated from incoming nodes
 const tableOptions = computed(() => {
-    const targetId = node.frontend.id
-    const incoming = flowStore.edges.filter(e => e.target === targetId)
-    return incoming
-        .map(e => {
-            const src = flowStore.nodes.find(n => n.id === e.source)
-            return src?.data.outputs_schema && (src.data.outputs_schema as any).__TABLE__
-                ? { label: src.data.name, value: src.data.name }
-                : null
-        })
-        .filter((opt): opt is { label: string; value: string } => opt !== null)
+    const targetId = node.id
+    const nodes = flowStore.nodes
+    return nodes
+        .filter(n =>
+            n.data.outputs &&
+            typeof n.data.outputs === 'object' &&
+            !Array.isArray(n.data.outputs) &&
+            '__TABLE__' in n.data.outputs &&
+            n.data.id !== targetId
+        )
+        .map(n => ({
+            label: n.data.name,
+            value: n.data.name,
+        }))
 })
 
 function getTableKeys(tableName?: string): string[] {
     if (!tableName) return []
     const node = flowStore.nodes.find(n => n.data.name === tableName)
-    const schema = (node?.data?.outputs_schema as any)?.__TABLE__
+    const schema = (node?.data?.outputs as any)?.__TABLE__
     const keys: string[] = []
     if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
         for (const key of Object.keys(schema)) {
@@ -157,7 +222,7 @@ function getAllTableKeys(): string[] {
     const keys: string[] = []
     for (const option of tableOptions.value) {
         const node = flowStore.nodes.find(n => n.data.name === option.value)
-        const schema = (node?.data?.outputs_schema as any)?.__TABLE__
+        const schema = (node?.data?.outputs as any)?.__TABLE__
         if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
             for (const key of Object.keys(schema)) {
                 keys.push(`${option.value}.${key}`)
@@ -171,4 +236,23 @@ function getAllTableKeys(): string[] {
 
 <style scoped>
 /* 可选样式 */
+.input-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 60px;
+    font-weight: bold;
+}
+
+.input-expression {
+    grid-column: span 3 !important;
+    padding-left: 26px;
+}
+
+.input-grid {
+    display: grid;
+    flex-wrap: wrap;
+    width: 100%;
+    grid-template-columns: 18px 220px 1fr !important;
+}
 </style>

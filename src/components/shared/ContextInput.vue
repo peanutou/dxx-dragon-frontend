@@ -1,7 +1,9 @@
 <template>
-    <n-input ref="inputRef" v-model:value="modelValue" v-bind="$attrs" @keydown="handleKeydown" @keyup="handleKeyup" />
+    <n-input ref="inputRef" v-model:value="modelValue" v-bind="$attrs" @keydown="handleKeydown" @keyup="handleKeyup"
+        placeholder="变量的推荐写法：{{ inputs.a | tojson }}，tojson 可以让表达式渲染结果与 JSON 兼容，否则可能会出错。" />
     <div v-if="suggestionState.show" class="suggestion-popup" :style="popupStyle">
-        <div v-for="(s, i) in suggestionState.suggestions" :key="s" class="suggestion-item" :style="getItemStyle(i)" @mousedown.prevent="selectSuggestion(s)">
+        <div v-for="(s, i) in suggestionState.suggestions" :key="s" class="suggestion-item" :style="getItemStyle(i)"
+            @mousedown.prevent="selectSuggestion(s)">
             {{ s }}
         </div>
     </div>
@@ -28,7 +30,7 @@ watch(
     (flow) => {
         // console.log('🎯 Flow changed:', flow)
         const inputs = flow.inputs?.map(i => `inputs.${i.name}`) ?? []
-        const variables = flow.variables ? Object.keys(flow.variables).map(k => `${k}`) : []
+        const variables = flow.variables?.map(n => `${n.name}`) ?? []
         const nodes = flow.nodes?.map(n => `${n.data.name}`) ?? []
         suggestionState.suggestions = [...inputs, ...variables, ...nodes]
     },
@@ -38,21 +40,21 @@ watch(
 const themeVars = useThemeVars()
 
 const popupStyle = computed(() => ({
-  position: 'absolute',
-  border: '1px solid #ccc',
-  padding: '4px',
-  zIndex: 10,
-  backgroundColor: themeVars.value.bodyColor,
-  color: themeVars.value.textColor1,
+    position: 'absolute',
+    border: '1px solid #ccc',
+    padding: '4px',
+    zIndex: 10,
+    backgroundColor: themeVars.value.bodyColor,
+    color: themeVars.value.textColor1,
 } as CSSProperties))
 
 const getItemStyle = (index: number) => ({
-  padding: '2px 4px',
-  cursor: 'pointer',
-  background: suggestionState.activeIndex === index
-    ? themeVars.value.primaryColor
-    : themeVars.value.bodyColor,
-  color: themeVars.value.textColor1,
+    padding: '2px 4px',
+    cursor: 'pointer',
+    background: suggestionState.activeIndex === index
+        ? themeVars.value.primaryColor
+        : themeVars.value.bodyColor,
+    color: themeVars.value.textColor1,
 })
 
 function getInputElement() {
@@ -75,8 +77,8 @@ function selectSuggestion(suggestion: string) {
     if (!input) return
     const cursor = input.selectionStart ?? 0
     const text = modelValue.value || ''
-    const insertion = suggestion + '}}'
-    modelValue.value = text.slice(0, cursor) + insertion + text.slice(cursor)
+    const insertion = ` ${suggestion} | tojson ` + '}}'
+    modelValue.value = text.slice(0, cursor).trim() + insertion + text.slice(cursor)
     suggestionState.show = false
 }
 

@@ -1,20 +1,19 @@
 <template>
     <div class="pl-6 pt-2 p-4 space-y-" style="height: 100%; overflow-y: auto;">
-        <h3 class="text-lg font-bold">全局输入配置</h3>
-        <FlowInputEditor :inputs="flowInputs" />
-
-        <h3 class="text-lg font-bold">变量映射配置</h3>
-        <FlowVariableEditor :variables="flowVariables" :inputs="flowInputs" />
+        <h3 class="text-lg mb-4 font-bold bg-gray-800 p-2">Inputs 设置</h3>
+        <FlowFieldEditor class="mb-2" :object="flowStore" fieldName="inputs" fieldType="inputs" />
+        <h3 class="text-lg mb-4 font-bold bg-gray-800 p-2">Variables 设置</h3>
+        <FlowFieldEditor class="mb-2" :object="flowStore" fieldName="variables" fieldType="variables" />
+        <h3 class="text-lg mb-4 font-bold bg-gray-800 p-2">Outputs 结构</h3>
+        <FlowOutputEditor class="mb-2" />
     </div>
 </template>
 
 <script setup lang="ts">
-import FlowInputEditor from './FlowInputEditor.vue'
-import FlowVariableEditor from './FlowVariableEditor.vue'
-import { useFlowStore } from '@/store/flow'
+import FlowFieldEditor from './FlowFieldEditor.vue'
+import FlowOutputEditor from './FlowOutputEditor.vue'
 import { storeToRefs } from 'pinia'
-
+import { useFlowStore } from '@/store/flow'
 const flowStore = useFlowStore()
-const { flowInputs, flowVariables } = storeToRefs(flowStore)
-
+const { inputs: flowInputs, variables: flowVariables } = storeToRefs(flowStore)
 </script>

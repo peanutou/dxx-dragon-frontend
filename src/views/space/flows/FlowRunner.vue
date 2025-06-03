@@ -1,7 +1,7 @@
 <template>
-    <n-layout has-sider style="height: 100%; border: 1px solid lightgrey;">
-        <!-- 左边内容 -->
-        <div style="width: 50%; border-right: 1px solid #eee;">
+    <n-split :max="0.7" :min="0.3" :default-size="0.4" class="h-full" style="height: 100%;">
+        <template #1>
+            <!-- 左边内容 -->
             <n-card v-if="flowDefinition" :title="flowDefinition.name" size="small" class="h-full w-full"
                 style="overflow-y: auto;">
                 <template #header-extra>
@@ -34,76 +34,77 @@
                             v-model:inputValues="inputValues" />
                     </n-form>
                     <!-- execute result: outputs.trace -->
-                    <n-button v-if="output?.outputs?.trace" type="warning" size="small">
-                        ⏱️ 执行耗时: {{ output.outputs.trace.duration.toFixed(2) }} 秒
-                        ｜开始时间: {{ new Date(output.outputs.trace.start_time).toLocaleString() }}
-                        ｜成功: <span :style="{ color: output.outputs.trace.success ? 'green' : 'red' }" class="ms-1 bold">
-                            {{ output.outputs.trace.success ? '是' : '否' }}
+                    <n-button v-if="flowResult" type="warning" size="small">
+                        ⏱️ 执行耗时: {{ flowResult.duration.toFixed(2) }} 秒
+                        ｜开始时间: {{ new Date(flowResult.start_time).toLocaleString() }}
+                        ｜成功: <span :style="{ color: flowResult.status === 'success' ? 'green' : 'red' }"
+                            class="ms-1 bold">
+                            {{ flowResult.status === 'success' ? '是' : '否' }}
                         </span>
                     </n-button>
                     <!-- execute result: nodes trace -->
-                    <n-data-table v-if="output?.debug_info?.flow_config?.nodes" :columns="traceColumns"
-                        :data="output.debug_info.flow_config.nodes" size="small" class="mt-4 text-xs" />
+                    <n-data-table v-if="nodeResults" :columns="nodeResultColumns" :data="Object.values(nodeResults)" size="small"
+                        class="mt-4 text-xs" />
                 </template>
                 <template #action>
                     <n-button type="primary" @click="handleRun" :loading="loading">运行</n-button>
                 </template>
             </n-card>
-        </div>
-        <!-- 右边内容 -->
-        <div style="flex: 1; border-right: 1px solid #eee;">
-            <n-card title="运行结果" size="small" style="max-height: 100%; overflow-y: auto;">
-                <VueJsonPretty :data="output ? output : ''" :deep="Infinity" showLength showIcon theme="dark" />
-            </n-card>
-        </div>
-    </n-layout>
+        </template>
+        <template #2>
+            <!-- 右边内容 -->
+            <ResultPreview 
+                :result="result || ''" 
+                :result-path="testMode ? 'root.data.result' : 'root'"
+                @update:schema="(data) => emit('update:flow-schema', data)" />
+        </template>
+    </n-split>
 </template>
 
 <script setup lang="ts">
+import 'vue-json-pretty/lib/styles.css'
 import { ref, onMounted, watch, h } from 'vue'
 import { useRoute } from 'vue-router'
-import { NCard, NTag, NButton, NTooltip, NDivider, NDataTable } from 'naive-ui'
+import { NCard, NTag, NButton, NTooltip, NDivider, NDataTable, NSplit } from 'naive-ui'
 import request from '@/utils/axios'
-import VueJsonPretty from 'vue-json-pretty'
-import 'vue-json-pretty/lib/styles.css'
 import { TenantSpaceAPI } from '@/apis/endpoints'
 import FlowInputs from '@/components/flows/FlowInputs.vue'
+import ResultPreview from '@/components/nodes/test-run/ResultPreview.vue'
 
-
-const props = defineProps<{ flowId: string, debugMode?: boolean, testMode?: boolean }>()
+const props = defineProps<{ flowId: string, testMode?: boolean }>()
+const emit = defineEmits(['update:flow-schema'])
 const route = useRoute()
 const flowId = props.flowId || route.params.flowId as string
-const debugMode = props.debugMode ?? false
 const testMode = props.testMode ?? false
 const inputValues = ref<Record<string, any>>({})
 const loading = ref(false)
-const output = ref<any>(null)
+const result = ref<string | null>(null)
+const nodeResults = ref<any>(null)
+const flowResult = ref<any>(null)
 const flowDefinition = ref<any>(null)
 const selectedRunId = ref('')
-
-// traceColumns for node trace info
-const traceColumns = [
+const nodeResultColumns = [
     {
         title: '节点',
-        key: 'name',
+        key: 'node_name',
     },
     {
         title: '耗时',
         key: 'duration',
-        render: (row: any) => `${row.outputs.trace.duration.toFixed(2)} 秒`
+        render: (row: any) => `${row.duration.toFixed(2)} 秒`
     },
     {
         title: '开始时间',
         key: 'start_time',
-        render: (row: any) => new Date(row.outputs.trace.start_time).toLocaleString()
+        render: (row: any) => new Date(row.start_time).toLocaleString()
     },
     {
         title: '成功',
-        key: 'success',
+        key: 'status',
         render: (row: any) => h(
             'span',
-            { style: { color: row.outputs.trace.success ? 'green' : 'red' } },
-            row.outputs.trace.success ? '是' : '否'
+            { style: { color: row.status === 'success' ? 'green' : 'red' } },
+            row.status === 'success' ? '是' : '否'
         )
     }
 ]
@@ -132,18 +133,18 @@ onMounted(() => {
 
 async function handleRun() {
     loading.value = true
-    output.value = null
+    result.value = null
 
     let parsedInput = inputValues.value
 
     try {
         const endpoint = testMode
             ? TenantSpaceAPI.flows.runTest(flowId)
-            : debugMode
-                ? TenantSpaceAPI.flows.runDebug(flowId)
-                : TenantSpaceAPI.flows.run(flowId)
+            : TenantSpaceAPI.flows.run(flowId)
         const res = await request.post(endpoint, parsedInput)
-        output.value = res.data?.data
+        result.value = JSON.stringify(res.data)
+        nodeResults.value = res.data?.data?.context_list[0]?.node_results || null
+        flowResult.value = res.data?.data
         window.$message.success('运行成功')
     } catch (err) {
         window.$message.error('运行失败')
@@ -174,16 +175,4 @@ watch(selectedRunId, (runId) => {
 })
 </script>
 
-<style scoped>
-:deep(.vjs-tree-node .vjs-indent-unit) {
-    width: 2em;
-}
-
-:deep(.vjs-tree-node) {
-    font-size: 12px;
-}
-
-.tight-form :deep(.n-form-item) {
-    margin-bottom: -24px;
-}
-</style>
+<style scoped></style>

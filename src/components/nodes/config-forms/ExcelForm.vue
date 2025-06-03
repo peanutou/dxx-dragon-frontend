@@ -1,7 +1,7 @@
 <template>
     <n-form :model="node" label-placement="top">
         <n-form-item label="名称">
-            <n-input v-model:value="node.name" placeholder="请输入节点名称" />
+            <n-input v-model:value="node.name" placeholder="请输入节点名称" :allow-input="val => !/\s/.test(val)" />
         </n-form-item>
         <n-form-item label="文件 ID" path="file_id">
             <context-input v-model:modelValue="node.file_id" type="text" placeholder="请输入文件 ID" />
@@ -18,7 +18,8 @@
                 <template #default="{ value }">
                     <div class="flex gap-2">
                         <n-input v-model:value="value.source" placeholder="标题位置" />
-                        <n-input v-model:value="value.target" placeholder="目标变量名" />
+                        <n-input v-model:value="value.target" placeholder="目标变量名"
+                            :allow-input="val => !/\s/.test(val)" />
                     </div>
                 </template>
             </n-dynamic-input>

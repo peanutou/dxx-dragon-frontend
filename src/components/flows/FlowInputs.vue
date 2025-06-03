@@ -31,7 +31,7 @@
             </div>
             <div class="flex items-center gap-2 w-full" v-else-if="field.type === 'file'">
                 <n-upload :show-file-list="false"
-                    :on-change="(options: UploadFileInfo) => handleFileUpload(options, field.name)">
+                    :on-change="(options) => handleFileUpload(options, field.name)">
                     <template #default>
                         <div class="flex items-center gap-4">
                             <n-button>点击上传</n-button>
@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
 import { BookmarkOutline } from '@vicons/ionicons5'
-import { NTooltip as nTooltip } from 'naive-ui'
+import { NTooltip, NSwitch, NButton, NForm, NUpload, NFormItem } from 'naive-ui'
 import type { UploadFileInfo } from 'naive-ui'
 import { TenantSpaceAPI } from '@/apis/endpoints'
 import request from '@/utils/axios'
@@ -63,7 +63,9 @@ const props = defineProps<{
     inputValues: Record<string, any>
 }>()
 
-function handleFileUpload(options: UploadFileInfo, fieldName: string) {
+function handleFileUpload(options: {
+    file: UploadFileInfo | File | { file: File }
+}, fieldName: string) {
     if (!options.file) {
         window.$message.error('上传失败，未获取到文件')
         return
