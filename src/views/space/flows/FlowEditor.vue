@@ -5,7 +5,7 @@
             <n-button v-for="type in nodeTypeButtons" :key="type" class="draggable-node" text block
                 @dragstart="onDragStart($event, type)" draggable="true">
                 {{ nodeTypeRegistry[type].label }}
-                <span v-if="nodeCountOfEachType[type]"> - {{ nodeCountOfEachType[type] }}</span>
+                <n-tag v-if="nodeCountOfEachType[type]" size="tiny" class="ml-2">{{ nodeCountOfEachType[type] }}</n-tag>
             </n-button>
         </n-card>
         <n-split direction="horizontal" :max="0.85" :min="0.15" :default-size="0.65">
