@@ -88,12 +88,8 @@ export const useFlowStore = defineStore('flow', {
             this.inputs = []
             this.variables = []
             this.outputs = null
-            this.mockContext = {
-                inputs: {},
-                variables: {},
-                outputs: {} as Record<string, any>,
-                result: {},
-            }
+            // Do not reset mockContext, 
+            // as test nodes may need it
             this.messages = []
             this.undoStack = []
             this.redoStack = []

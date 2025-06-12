@@ -1,6 +1,6 @@
 <template>
     <div class="flex items-center justify-center h-screen bg-gray-50">
-        <div class="w-1/3 max-w-xl">
+        <div class="w-full sm:w-2/3 md:w-1/2 lg:w-1/3 max-w-xl px-4">
             <n-card class="shadow-xl border-2 rounded-lg border-gray-200" title="登录系统">
                 <n-form :model="form" :rules="rules" ref="formRef">
                     <n-form-item path="email" label="邮箱">
@@ -23,6 +23,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { NCard } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import axios from '@/utils/axios'
 import { useUserStore } from '@/store/user'
@@ -70,4 +71,10 @@ const handleLogin = async () => {
 
 <style scoped>
 /* 你可以自定义美化样式 */
+@media (max-width: 640px) {
+    .n-card {
+        box-shadow: none;
+        border-width: 1px;
+    }
+}
 </style>

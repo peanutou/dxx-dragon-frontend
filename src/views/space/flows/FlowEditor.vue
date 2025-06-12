@@ -12,12 +12,19 @@
             <template #1> <!-- 中间流程画布 -->
                 <n-tabs v-model:value="activeTab" type="segment" class="canvas-panel h-full" pane-class="h-full">
                     <n-tab-pane name="canvas" tab="流程画布" style="padding: 0px;">
-
-                        <VueFlow ref="vueFlowRef" v-model:nodes="nodes" v-model:edges="edges" :node-types="nodeTypesMap"
-                            :connection-mode="ConnectionMode.Loose" :pan-on-drag="true" :default-edge-options="{
+                        <VueFlow ref="vueFlowRef" 
+                            v-model:nodes="nodes" v-model:edges="edges" 
+                            :connection-mode="ConnectionMode.Strict" 
+                            :pan-on-drag="true" 
+                            :node-types="nodeTypesMap"
+                            :edge-types="{ 
+                                'default': markRaw(CustomBaseEdge)
+                            }"
+                            :default-edge-options="{
                                 type: 'default',
-                                markerEnd: 'arrowclosed'
-                            }" @drop="onDrop" @dragover="onDragOver" @node-click="onNodeClick"
+                                markerEnd: 'arrowclosed',
+                            }" 
+                            @drop="onDrop" @dragover="onDragOver" @node-click="onNodeClick"
                             @nodes-change="onNodesChange" @edges-change="onEdgesChange" @connect="onConnect"
                             @viewport-change="onViewportChange" :is-valid-connection="validateConnection">
                             <MiniMap />
@@ -116,8 +123,10 @@ import type { NodeType } from '@/store/flow'
 import { storeToRefs } from 'pinia'
 import { NButton, NTag, NCard, NSplit, NTabs, NTabPane } from 'naive-ui'
 import request from '@/utils/axios'
+// Panels
 import FlowConfigPanel from './FlowConfigPanel.vue';
 import NodeConfigPanel from '@/components/nodes/NodeConfigPanel.vue'
+// Custom Nodes
 import PromptNode from '@/components/nodes/custom-nodes/PromptNode.vue'
 import HTTPNode from '@/components/nodes/custom-nodes/HTTPNode.vue'
 import RegexNode from '@/components/nodes/custom-nodes/RegexNode.vue'
@@ -128,6 +137,9 @@ import StartNode from '@/components/nodes/custom-nodes/StartNode.vue'
 import EndNode from '@/components/nodes/custom-nodes/EndNode.vue'
 import JoinNode from '@/components/nodes/custom-nodes/JoinNode.vue';
 import ForEachNode from '@/components/nodes/custom-nodes/ForEachNode.vue';
+// Custom Edge
+import CustomBaseEdge from '@/components/edges/CustomBaseEdge.vue';
+// 其他组件
 import FlowGlobalsEditor from './FlowGlobalsEditor.vue'
 import FlowYAMLViewer from './FlowYAMLViewer.vue'
 import FlowRunner from './FlowRunner.vue'
@@ -702,7 +714,12 @@ async function onDrop(event: DragEvent) {
     nodes.value.push(defaultNodeData)
 }
 
-function onConnect(params: { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }) {
+function onConnect(params: {
+    source: string;
+    target: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null
+}) {
     const sourceNode = nodes.value.find((n) => n.id === params.source)
     const targetNode = nodes.value.find((n) => n.id === params.target)
     if (!sourceNode?.data?.name || !targetNode?.data?.name) {

@@ -15,7 +15,7 @@
             :validation-status="node.strategy === 'none' && !isValidObject(node.template) ? 'warning' : 'success'">
             <template #label>
                 <div class="flex items-center justify-between w-full space-x-2">
-                    <span>聚合输出模板 (JSON)</span>
+                    <span>聚合输出模板</span>
                     <n-button size="tiny" @click="showModal = true" quaternary type="primary"
                         :disabled="node.strategy !== 'none'">
                         大窗编辑

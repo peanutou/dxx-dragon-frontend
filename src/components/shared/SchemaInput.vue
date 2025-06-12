@@ -5,8 +5,10 @@
         </n-button>
         <n-modal v-model:show="showModal" title="生成 Schema" preset="card" style="width: 640px;">
             <n-space vertical style="max-height: 60vh; overflow: hidden;">
-                <n-input v-model:value="sampleJson" type="textarea" placeholder="请输入 JSON 示例数据"
-                    :autosize="{ minRows: 6 }" style="font-size: 12px;" />
+                <div style="max-height: 200px; overflow: auto; font-size: 12px;">
+                    <n-input v-model:value="sampleJson" type="textarea" placeholder="请输入 JSON 示例数据"
+                        :autosize="{ minRows: 6 }" style="font-size: 12px;" />
+                </div>
                 <n-button @click="generateSchema" type="primary">生成 Schema</n-button>
                 <div style="max-height: 300px; overflow: auto;">
                     <VueJsonPretty :data="schema" :deep="2" :showLine="false" showLength showIcon theme="dark" />

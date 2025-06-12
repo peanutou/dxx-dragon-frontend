@@ -1,7 +1,7 @@
 <template>
     <n-form :model="node" label-placement="top">
         <n-form-item label="名称">
-            <n-input v-model:value="node.name" placeholder="请输入节点名称" :allow-input="val => !/\s/.test(val)"/>
+            <n-input v-model:value="node.name" placeholder="请输入节点名称" :allow-input="val => !/\s/.test(val)" />
         </n-form-item>
         <n-form-item label="Target Table">
             <div class="flex gap-2 w-full">
@@ -49,6 +49,7 @@
                                     <n-select v-model:value="rule.usage" :options="[
                                         { label: 'Include', value: ResultMode.INCLUDE },
                                         { label: 'Exclude', value: ResultMode.EXCLUDE },
+                                        { label: 'Subtract', value: ResultMode.SUBTRACT },
                                     ]" placeholder="选择运行模式" size="tiny" />
                                 </n-input-group>
                             </n-gi>
@@ -140,6 +141,7 @@ enum ComparisonMode {
 enum ResultMode {
     INCLUDE = 'include',
     EXCLUDE = 'exclude',
+    SUBTRACT = 'subtract',
 }
 
 // Comparer node configuration interface
@@ -197,7 +199,7 @@ const tableOptions = computed(() => {
             typeof n.data.outputs === 'object' &&
             !Array.isArray(n.data.outputs) &&
             '__TABLE__' in n.data.outputs &&
-            n.data.id !== targetId
+            n.id !== targetId
         )
         .map(n => ({
             label: n.data.name,

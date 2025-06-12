@@ -1,33 +1,28 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
-import Login from '@/views/auth/Login.vue'
-import Register from '@/views/auth/Register.vue'
-
+const Login = () => import('@/views/auth/Login.vue')
+const Register = () => import('@/views/auth/Register.vue')
 // 平台租户管理
-import TenantList from '@/views/platform/tenants/TenantList.vue'
-
+const TenantList = () => import('@/views/platform/tenants/TenantList.vue')
 // 租户空间模块
-import Dashboard from '@/views/space/dashboard/Dashboard.vue'
-import FlowList from '@/views/space/flows/FlowList.vue'
-import FlowEditor from '@/views/space/flows/FlowEditor.vue'
-import FlowRunner from '@/views/space/flows/FlowRunner.vue'
-import TenantSettingsLayout from '@/views/space/settings/TenantSettingsLayout.vue'
-import TenantProfile from '@/views/space/settings/TenantProfile.vue'
-import TenantRoles from '@/views/space/settings/TenantRoles.vue'
-import TenantUsers from '@/views/space/settings/TenantUsers.vue'
-
+const Dashboard = () => import('@/views/space/dashboard/Dashboard.vue')
+const FlowList = () => import('@/views/space/flows/FlowList.vue')
+const FlowEditor = () => import('@/views/space/flows/FlowEditor.vue')
+const FlowRunner = () => import('@/views/space/flows/FlowRunner.vue')
+const TenantSettingsLayout = () => import('@/views/space/settings/TenantSettingsLayout.vue')
+const TenantProfile = () => import('@/views/space/settings/TenantProfile.vue')
+const TenantRoles = () => import('@/views/space/settings/TenantRoles.vue')
+const TenantUsers = () => import('@/views/space/settings/TenantUsers.vue')
 // Chat模块
-import ChatView from '@/views/space/chat/ChatView.vue'
-
+const ChatView = () => import('@/views/space/chat/ChatView.vue')
 // 文件模块
-import FileList from '@/views/space/files/FileList.vue'
-
+const FileList = () => import('@/views/space/files/FileList.vue')
 // 错误页面
-import NotFound from '@/views/errors/404.vue'
-import ServerError from '@/views/errors/500.vue'
-import Forbidden from '@/views/errors/403.vue'
-import Unauthorized from '@/views/errors/401.vue'
+const NotFound = () => import('@/views/errors/404.vue')
+const ServerError = () => import('@/views/errors/500.vue')
+const Forbidden = () => import('@/views/errors/403.vue')
+const Unauthorized = () => import('@/views/errors/401.vue')
 
 const routes: RouteRecordRaw[] = [
     {

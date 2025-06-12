@@ -98,7 +98,8 @@
                         </n-input-group>
                         <n-input-group>
                             <n-input-group-label class="w-[70px]">Value</n-input-group-label>
-                            <n-input v-model:value="value.value" placeholder="Body Value" />
+                            <!-- <n-input v-model:value="value.value" placeholder="Body Value" /> -->
+                            <context-input v-model:modelValue="value.value" placeholder="Body Value"/>
                         </n-input-group>
                     </div>
                 </template>
@@ -115,6 +116,7 @@
 import { ref, watch, Ref } from 'vue'
 import { NForm, NFormItem, NDivider, NInput, NSelect, NInputGroup, NInputGroupLabel, NButton, NDynamicInput } from 'naive-ui'
 import axios from '@/utils/axios';
+import ContextInput from '@/components/shared/ContextInput.vue';
 
 // Destructure the node prop for direct binding
 const { node } = defineProps<{ node: Record<string, any> }>()
