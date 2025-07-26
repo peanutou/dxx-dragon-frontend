@@ -109,14 +109,16 @@ export function createOperand(source: OperandSource, funcName?: string): Operand
  * Parse a string representation back into an Expression object.
  */
 export function parseExpression(exprStr: string, isRoot = true): Expression {
+    console.log('Parsing expression:', exprStr);
     let trimmed = exprStr.trim();
     // Strip only one layer of outer parentheses so basic expressions like ("12" equal "12") parse correctly
-    if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+    if (isRoot && trimmed.startsWith('(') && trimmed.endsWith(')')) {
         trimmed = trimmed.slice(1, -1).trim();
     }
     // Composite: split top-level 'and'
     const andParts = splitTopLevel(trimmed, ' and ');
     if (andParts.length > 1) {
+        console.log('AND parts:', andParts);
         return {
             id: generateShortId(),
             kind: 'composite',
@@ -127,6 +129,7 @@ export function parseExpression(exprStr: string, isRoot = true): Expression {
     // Composite: split top-level 'or'
     const orParts = splitTopLevel(trimmed, ' or ');
     if (orParts.length > 1) {
+        console.log('OR parts:', orParts);
         return {
             id: generateShortId(),
             kind: 'composite',
@@ -140,12 +143,12 @@ export function parseExpression(exprStr: string, isRoot = true): Expression {
         'start with',
         'end with',
         'match',
-        'equal',
         'not equal',
-        'greater',
+        'equal',
         'greater or equal',
+        'greater',
+        'less or equal',
         'less',
-        'less or equal'
     ] as const;
     for (const op of operators) {
         const opToken = ` ${op} `;
@@ -160,6 +163,7 @@ export function parseExpression(exprStr: string, isRoot = true): Expression {
                 op,
                 right: parseOperand(rightStr),
             };
+            console.log('Parsed basic expression:', isRoot ? 'composite' : 'basic', basicExpr);
             return isRoot
                 ? {
                     id: generateShortId(),
@@ -206,9 +210,10 @@ function splitArgs(s: string): string[] {
     let start = 0;
     for (let i = 0; i < s.length; i++) {
         const ch = s[i];
+        const chNext = s[i + 1];
         if (ch === '(') depth++;
         else if (ch === ')') depth--;
-        else if (ch === ',' && depth === 0) {
+        else if (ch === ',' && chNext === ' ' && depth === 0) {
             parts.push(s.slice(start, i));
             start = i + 1;
         }

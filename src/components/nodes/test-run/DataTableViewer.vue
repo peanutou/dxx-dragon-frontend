@@ -10,6 +10,7 @@ const props = defineProps<{
     data: Record<string, any[]> // table data: column name → array of values
     name?: string
     indexes?: number[] // list of row indexes to render
+    extra?: Record<string, any[]> // list of extra data 
 }>()
 
 const tableKey = computed(() => {
@@ -40,10 +41,12 @@ const tableData = computed(() => {
     const result: Record<string, any>[] = []
     const columnKeys = Object.keys(props.data)
     const indexSource = props.indexes ?? Object.values(props.data)[0]?.map((_, i) => i) ?? []
-    for (const i of indexSource) {
-        const row: Record<string, any> = { __index__: i }
+    for (let i = 0; i < indexSource.length; i++) {
+        const index = indexSource[i]
+        const row: Record<string, any> = { __index__: index }
         for (const col of columnKeys) {
-            row[col] = props.data[col]?.[i]
+            const extraValue = props.extra?.[col]?.[i]
+            row[col] = extraValue ? extraValue : props.data[col]?.[index]
         }
         result.push(row)
     }

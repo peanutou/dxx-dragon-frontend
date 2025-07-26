@@ -11,10 +11,10 @@ export function isLabelValid(label?: string): boolean {
     if (!label) return true
     const isChinese = /[\u4e00-\u9fa5]/.test(label)
     if (isChinese) {
-        return label.length <= 20
+        return label.length <= 100
     } else {
         const words = label.trim().split(/\s+/)
-        return words.length <= 20
+        return words.length <= 100
     }
 }
 

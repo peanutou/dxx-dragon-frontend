@@ -33,13 +33,17 @@ import {
 } from '@vicons/ionicons5'
 
 const emit = defineEmits(['update:schema'])
-const props = defineProps<{ resultPath: string, result: string }>()
+const props = defineProps<{ resultPath: string, result: string, dataTool?: boolean }>()
 function renderIcon(icon: Component) {
     return () => h(NIcon, null, { default: () => h(icon) })
 }
 const nodeSelectedPath = ref('')
 function handleJsonNodeClick(node: any) {
     console.log('Node clicked:', node, nodeSelectedPath.value)
+    const selectedValue = getValueByPath(parsedResult.value, nodeSelectedPath.value)
+    // Save selectedValue to clipboard
+    navigator.clipboard.writeText(JSON.stringify(selectedValue, null, 4))
+    window.$message.success('已复制到剪贴板')
 }
 function getValueByPath(obj: any, path: string): any {
     if (!path) return obj;
@@ -70,6 +74,7 @@ const menuOptions: MenuOption[] = [
         label: '数据处理工具',
         key: 'data-processing-tools',
         icon: renderIcon(ConstructIcon),
+        show: props.dataTool,
         children: [
             {
                 type: 'group',

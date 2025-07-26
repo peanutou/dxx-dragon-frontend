@@ -2,29 +2,30 @@
     <div class="flow-layout">
         <!-- 左侧节点面板 -->
         <n-card title="节点面板" size="small" class="left-panel side-panel">
-            <n-button v-for="type in nodeTypeButtons" :key="type" class="draggable-node" text block
-                @dragstart="onDragStart($event, type)" draggable="true">
-                {{ nodeTypeRegistry[type].label }}
-                <n-tag v-if="nodeCountOfEachType[type]" size="tiny" class="ml-2">{{ nodeCountOfEachType[type] }}</n-tag>
-            </n-button>
+            <template v-for="(type, index) in nodeTypeButtons" :key="index">
+                <n-button v-if="nodeTypeRegistry[type].label !== '-'" class="draggable-node" text block
+                    @dragstart="onDragStart($event, type)" draggable="true">
+                    <div class="node-text">
+                        {{ nodeTypeRegistry[type].label }}
+                    </div>
+                    <n-tag v-if="nodeCountOfEachType[type]" size="tiny" class="ml-2">{{ nodeCountOfEachType[type]
+                        }}</n-tag>
+                </n-button>
+                <n-divider v-else />
+            </template>
         </n-card>
         <n-split direction="horizontal" :max="0.85" :min="0.15" :default-size="0.65">
             <template #1> <!-- 中间流程画布 -->
                 <n-tabs v-model:value="activeTab" type="segment" class="canvas-panel h-full" pane-class="h-full">
                     <n-tab-pane name="canvas" tab="流程画布" style="padding: 0px;">
-                        <VueFlow ref="vueFlowRef" 
-                            v-model:nodes="nodes" v-model:edges="edges" 
-                            :connection-mode="ConnectionMode.Strict" 
-                            :pan-on-drag="true" 
-                            :node-types="nodeTypesMap"
-                            :edge-types="{ 
+                        <VueFlow ref="vueFlowRef" v-model:nodes="nodes" v-model:edges="edges"
+                            :connection-mode="ConnectionMode.Strict" :pan-on-drag="true" :node-types="nodeTypesMap"
+                            :edge-types="{
                                 'default': markRaw(CustomBaseEdge)
-                            }"
-                            :default-edge-options="{
+                            }" :default-edge-options="{
                                 type: 'default',
                                 markerEnd: 'arrowclosed',
-                            }" 
-                            @drop="onDrop" @dragover="onDragOver" @node-click="onNodeClick"
+                            }" @drop="onDrop" @dragover="onDragOver" @node-click="onNodeClick"
                             @nodes-change="onNodesChange" @edges-change="onEdgesChange" @connect="onConnect"
                             @viewport-change="onViewportChange" :is-valid-connection="validateConnection">
                             <MiniMap />
@@ -99,6 +100,7 @@ import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/minimap/dist/style.css'
 import type { NodeProps, NodeChange, EdgeChange, Connection } from '@vue-flow/core';
+import { NButton, NTag, NCard, NSplit, NTabs, NTabPane } from 'naive-ui'
 import { ref, computed, onMounted, markRaw, h, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 // VueFlow 相关
@@ -121,22 +123,10 @@ import { useNavbarStore } from '@/store/navbar'
 import { useFlowStore } from '@/store/flow'
 import type { NodeType } from '@/store/flow'
 import { storeToRefs } from 'pinia'
-import { NButton, NTag, NCard, NSplit, NTabs, NTabPane } from 'naive-ui'
 import request from '@/utils/axios'
 // Panels
 import FlowConfigPanel from './FlowConfigPanel.vue';
 import NodeConfigPanel from '@/components/nodes/NodeConfigPanel.vue'
-// Custom Nodes
-import PromptNode from '@/components/nodes/custom-nodes/PromptNode.vue'
-import HTTPNode from '@/components/nodes/custom-nodes/HTTPNode.vue'
-import RegexNode from '@/components/nodes/custom-nodes/RegexNode.vue'
-import AggregatorNode from '@/components/nodes/custom-nodes/AggregatorNode.vue'
-import ExcelNode from '@/components/nodes/custom-nodes/ExcelNode.vue';
-import ComparerNode from '@/components/nodes/custom-nodes/ComparerNode.vue';
-import StartNode from '@/components/nodes/custom-nodes/StartNode.vue'
-import EndNode from '@/components/nodes/custom-nodes/EndNode.vue'
-import JoinNode from '@/components/nodes/custom-nodes/JoinNode.vue';
-import ForEachNode from '@/components/nodes/custom-nodes/ForEachNode.vue';
 // Custom Edge
 import CustomBaseEdge from '@/components/edges/CustomBaseEdge.vue';
 // 其他组件
@@ -164,6 +154,7 @@ const nodeTypeRegistry: Record<string, { label: string; allowNested: boolean; ca
     Aggregator: { label: 'Aggregator', allowNested: true },
     Excel: { label: 'Excel', allowNested: true },
     Comparer: { label: 'Comparer', allowNested: true },
+    Python: { label: 'Python', allowNested: true },
     Join: { label: 'Join', allowNested: true, canContainChildren: true },
     ForEach: { label: 'ForEach', allowNested: true, canContainChildren: true },
 }
@@ -186,18 +177,15 @@ const nodeCountOfEachType = computed(() => {
     })
     return countMap
 })
-const nodeTypesMap = {
-    Prompt: markRaw(PromptNode),
-    Http: markRaw(HTTPNode),
-    Regex: markRaw(RegexNode),
-    Aggregator: markRaw(AggregatorNode),
-    Excel: markRaw(ExcelNode),
-    Comparer: markRaw(ComparerNode),
-    Start: markRaw(StartNode),
-    End: markRaw(EndNode),
-    Join: markRaw(JoinNode),
-    ForEach: markRaw(ForEachNode),
-    // Add more node types as needed
+const modules = import.meta.glob('@/components/nodes/custom-nodes/*Node.vue', { eager: true })
+const nodeTypesMap: Record<string, any> = {}
+for (const [key, _value] of Object.entries(nodeTypeRegistry)) {
+    const filePath = Object.keys(modules).find(path => path.includes(`/${key}Node.vue`))
+    if (filePath) {
+        nodeTypesMap[key] = markRaw((modules as any)[filePath].default)
+    } else {
+        console.warn(`Component for ${key}Node.vue not found`)
+    }
 }
 const flowStore = useFlowStore()
 const {
@@ -624,7 +612,10 @@ async function publishFlow() {
     const flowId = route.params.id as string
     try {
         if (hasChanges.value) {
-            await handleSave()
+            const saved = await handleSave()
+            if (!saved) {
+                return
+            }
         }
         const res = await request.post(TenantSpaceAPI.flows.publish(flowId))
         if (res?.data?.success) {
@@ -839,6 +830,20 @@ function validateConnection(connection: Connection): boolean {
     border-radius: 4px;
     cursor: grab;
     user-select: none;
+    --node-width: 165px;
+    width: var(--node-width);
+    display: flex;
+    align-items: center;
+    justify-content: start;
+}
+
+.draggable-node .node-text {
+    font-size: 14px;
+    font-weight: 500;
+    align-items: start;
+    display: flex;
+    justify-content: start;
+    width: calc(var(--node-width) - 50px);
 }
 
 

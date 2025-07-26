@@ -18,4 +18,16 @@ export default defineConfig({
             '@': path.resolve(__dirname, './src')
         }
     },
+    // This is necessary for monaco-editor to work correctly
+    optimizeDeps: {
+        include: ['monaco-editor']
+    },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: undefined
+            }
+        }
+    }
 })
+

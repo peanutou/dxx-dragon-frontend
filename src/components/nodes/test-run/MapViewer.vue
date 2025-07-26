@@ -25,7 +25,8 @@
                     <n-layout-content>
                         <div class="flex flex-row gap-4 pt-2">
                             <DataTableViewer v-for="tableName in Object.keys(group)" :key="tableName"
-                                :data="tables[tableName] || {}" :name="tableName" :indexes="group[tableName]" />
+                                :data="tables[tableName] || {}" :name="tableName" :indexes="group[tableName]"
+                                :extra="extra(section, groupIndex, tableName)" />
                         </div>
                     </n-layout-content>
                 </n-layout>
@@ -46,6 +47,19 @@ const props = defineProps<{
 }>()
 const tables = ref<Record<string, Record<string, any[]>>>(props.data.__TABLES__)
 const sections = ref<any[]>(props.data.__SECTIONS__)
+const extra = function (section: Record<string, any>, groupIndex: number, tableName: string) {
+    const method = section.__METADATA__.method
+    if (method == "subtract_input") {
+        const primaryMappings = section.__PRIMARY_MAPPINGS__?.[groupIndex]?.[tableName] || []
+        const linkedFields = section.__LINKED_FIELDS__?.[groupIndex]?.[tableName] || []
+        const extra = {
+            ...primaryMappings,
+            ...linkedFields,
+        }
+        return extra
+    }
+    else return null
+}
 watch(
     () => props.data,
     (newData) => {

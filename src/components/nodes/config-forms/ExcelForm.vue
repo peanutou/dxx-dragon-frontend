@@ -14,9 +14,9 @@
         </n-form-item>
         <n-form-item label="列提取规则" path="column_rules">
             <n-dynamic-input v-model:value="node.column_rules" placeholder="添加列提取规则"
-                :on-create="() => ({ source: '', target: '' })">
+                :on-create="() => ({ source: '', target: '' })" show-sort-button>
                 <template #default="{ value }">
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 w-full">
                         <n-input v-model:value="value.source" placeholder="标题位置" />
                         <n-input v-model:value="value.target" placeholder="目标变量名"
                             :allow-input="val => !/\s/.test(val)" />

@@ -57,6 +57,9 @@ watch(
                 // No changes, do nothing
                 return
             }
+            // 先清空 localData
+            Object.keys(localData).forEach(key => delete localData[key])
+            // 再赋值
             Object.assign(localData, newData)
         }
     },

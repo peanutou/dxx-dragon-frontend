@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import { ref, computed, h, onMounted } from 'vue'
-import { NDataTable } from 'naive-ui';
+import { NDataTable, NButton } from 'naive-ui';
 import type { DataTableColumns } from 'naive-ui'
 import axios from '@/utils/axios'
 import { TenantSpaceAPI } from '@/apis/endpoints'
@@ -47,6 +47,29 @@ const columns: DataTableColumns<FileEntity> = [
         key: 'file_name',
         sorter: true,
         width: 300,
+    },
+    {
+        title: 'ID',
+        key: 'file_id',
+        render: (row) => {
+            return h('div', { class: 'flex items-center space-x-2' }, [
+                h(
+                    NButton,
+                    {
+                        size: 'tiny',
+                        type: 'primary',
+                        secondary: true,
+                        disabled: !row.file_id,
+                        onClick: () => {
+                            if (row.file_id) {
+                                navigator.clipboard.writeText(row.file_id)
+                            }
+                        }
+                    },
+                    { default: () => '复制' }
+                )
+            ])
+        }
     },
     {
         title: '操作',

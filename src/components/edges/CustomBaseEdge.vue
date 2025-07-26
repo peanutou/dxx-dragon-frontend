@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, computed, h } from 'vue'
+import { computed, h } from 'vue'
 import type { EdgeProps } from '@vue-flow/core'
 import { BaseEdge, getBezierPath } from '@vue-flow/core'
 

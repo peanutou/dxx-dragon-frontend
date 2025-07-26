@@ -157,6 +157,15 @@ const columns: DataTableColumns<Flow> = [
                         'a',
                         {
                             href: 'javascript:void(0)',
+                            onClick: () => router.push({ name: 'FlowViewer', params: { id: row.flow_id } }),
+                            style: { color: '#2080f0', cursor: 'pointer', marginRight: '12px' }
+                        },
+                        '查看'
+                    ),
+                    h(
+                        'a',
+                        {
+                            href: 'javascript:void(0)',
                             onClick: () => router.push({ name: 'FlowEditor', params: { id: row.flow_id } }),
                             style: { color: '#2080f0', cursor: 'pointer', marginRight: '12px' }
                         },

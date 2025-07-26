@@ -3,17 +3,155 @@
         <n-form-item label="名称">
             <n-input v-model:value="node.name" placeholder="请输入节点名称" :allow-input="val => !/\s/.test(val)" />
         </n-form-item>
-        <n-form-item label="Target Table">
+        <n-form-item label="目标表">
             <div class="flex gap-2 w-full">
                 <n-select class="flex-1" v-model:value="node.target_table" :options="tableOptions"
                     placeholder="选择目标表" />
             </div>
         </n-form-item>
 
-        <n-form-item label="Input Table">
+        <!-- input_table -->
+        <n-form-item label="输入表">
             <div class="flex gap-2 w-full">
                 <n-select class="flex-1" v-model:value="node.input_table" :options="tableOptions" placeholder="选择输入表" />
             </div>
+        </n-form-item>
+
+        <!-- use_classifier -->
+        <n-form-item label="使用分类器">
+            <div class="flex items-center">
+                <n-switch v-model:value="node.use_classifier" />
+            </div>
+        </n-form-item>
+
+        <!-- classifier -->
+        <n-form-item v-if="node.use_classifier" label="分类器">
+            <template #label>
+                <div class="flex items-center">
+                    <span>分类器</span>
+                    <n-tooltip trigger="hover" placement="top">
+                        <template #trigger>
+                            <n-icon size="16" class="ml-1 text-gray-400" style="vertical-align: middle;">
+                                <InformationCircle />
+                            </n-icon>
+                        </template>
+                        <span>对物料进行标准化分类</span>
+                    </n-tooltip>
+                </div>
+            </template>
+            <n-space vertical class="w-full">
+                <n-input-group class="flex items-center w-full">
+                    <n-input-group-label style="width: 100px;">目标字段</n-input-group-label>
+                    <n-select v-model:value="node.classifier.target_field" :options="getTableKeys(node.target_table, false).map(key => ({
+                        label: key,
+                        value: key,
+                    }))" placeholder="选择目标字段" />
+                </n-input-group>
+                <n-input-group class="flex items-center w-full">
+                    <n-input-group-label style="width: 100px;">输入字段</n-input-group-label>
+                    <n-select v-model:value="node.classifier.input_field" :options="getTableKeys(node.input_table, false).map(key => ({
+                        label: key,
+                        value: key,
+                    }))" placeholder="选择输入字段" />
+                </n-input-group>
+            </n-space>
+        </n-form-item>
+
+        <!-- Priority -->
+        <n-form-item v-if="node.use_classifier" label="优先级">
+            <template #label>
+                <div class="flex items-center">
+                    <span>优先级</span>
+                    <n-tooltip trigger="hover" placement="top">
+                        <template #trigger>
+                            <n-icon size="16" class="ml-1 text-gray-400" style="vertical-align: middle;">
+                                <InformationCircle />
+                            </n-icon>
+                        </template>
+                        <span>对比时的优先级字段</span>
+                    </n-tooltip>
+                </div>
+            </template>
+            <n-space vertical class="w-full">
+                <n-input-group class="flex items-center w-full">
+                    <n-input-group-label style="width: 100px;">目标字段</n-input-group-label>
+                    <n-select v-model:value="node.priority.target_field" :options="getTableKeys(node.target_table, false).map(key => ({
+                        label: key,
+                        value: key,
+                    }))" placeholder="选择优先级字段" />
+                </n-input-group>
+                <n-input-group class="flex items-center w-full">
+                    <n-input-group-label style="width: 100px;">输入字段</n-input-group-label>
+                    <n-select v-model:value="node.priority.input_field" :options="getTableKeys(node.input_table, false).map(key => ({
+                        label: key,
+                        value: key,
+                    }))" placeholder="选择输入字段" />
+                </n-input-group>
+            </n-space>
+        </n-form-item>
+
+        <!-- Primary Mapping -->
+        <n-form-item label="数值匹配字段">
+            <template #label>
+                <div class="flex items-center">
+                    <span>数值匹配字段</span>
+                    <n-tooltip trigger="hover" placement="top">
+                        <template #trigger>
+                            <n-icon size="16" class="ml-1 text-gray-400" style="vertical-align: middle;">
+                                <InformationCircle />
+                            </n-icon>
+                        </template>
+                        <span>算法会尝试将【目标字段】和【输入字段】转换为浮点数，并自动去除【目标字段】≤ 0 或 empty 的数据，并自动去除【输入字段】≤ 0 或 empty
+                            的数据。如果无法转换，则将数据剔除。</span>
+                    </n-tooltip>
+                </div>
+            </template>
+            <n-space vertical class="w-full">
+                <n-input-group class="flex items-center w-full">
+                    <n-input-group-label style="width: 100px;">目标字段</n-input-group-label>
+                    <n-select v-model:value="node.primary_mapping.target_field" :options="getTableKeys(node.target_table, false).map(key => ({
+                        label: key,
+                        value: key,
+                    }))" placeholder="选择目标字段" />
+                </n-input-group>
+                <n-input-group class="flex items-center w-full">
+                    <n-input-group-label style="width: 100px;">输入字段</n-input-group-label>
+                    <n-select v-model:value="node.primary_mapping.input_field" :options="getTableKeys(node.input_table, false).map(key => ({
+                        label: key,
+                        value: key,
+                    }))" placeholder="选择输入字段" />
+                </n-input-group>
+            </n-space>
+        </n-form-item>
+
+        <!-- Mappings -->
+        <n-form-item label="联动数值">
+            <template #label>
+                <div class="flex items-center">
+                    <span>联动数值</span>
+                    <n-tooltip trigger="hover" placement="top">
+                        <template #trigger>
+                            <n-icon size="16" class="ml-1 text-gray-400" style="vertical-align: middle;">
+                                <InformationCircle />
+                            </n-icon>
+                        </template>
+                        <span>算法会尝试将所有联动数值的【输入字段】转换为浮点数。如果无法转换，则将数据剔除。</span>
+                    </n-tooltip>
+                </div>
+            </template>
+            <n-dynamic-input v-model:value="node.linked_fields" item-style="margin-bottom: 8px;" show-sort-button>
+                <template #default="{ value, index }">
+                    <n-space vertical class="w-full">
+                        <n-input-group class="flex items-center w-full">
+                            <n-input-group-label style="width: 100px;">输入字段</n-input-group-label>
+                            <n-select v-model:value="node.linked_fields[index]" :options="getTableKeys(node.input_table, false).map(key => ({
+                                label: key,
+                                value: key,
+                            }))" placeholder="选择输入字段" />
+                        </n-input-group>
+                    </n-space>
+                </template>
+            </n-dynamic-input>
         </n-form-item>
 
         <!-- Rules Editor -->
@@ -25,10 +163,12 @@
                 <template #default="{ value: rule, index }">
                     <n-space vertical class="w-full border-b pb-2 border-b-1 border-b-gray-300">
                         <n-grid :cols="3" x-gap="8" y-gap="8" class="input-grid">
+                            <!-- Status -->
                             <n-gi>
                                 <n-checkbox :checked="rule.status === 'enabled'" class="mr-2"
-                                    @change="(value) => { rule.status = value ? 'enabled' : 'disabled' }"></n-checkbox>
+                                    :on-update:checked="(value) => { rule.status = value ? 'enabled' : 'disabled' }"></n-checkbox>
                             </n-gi>
+                            <!-- Mode -->
                             <n-gi>
                                 <n-input-group class="flex items-center">
                                     <n-input-group-label size="tiny" class="input-label">
@@ -37,10 +177,10 @@
                                     <n-select v-model:value="rule.mode" :options="[
                                         { label: 'Individual', value: ComparisonMode.INDIVIDUAL },
                                         { label: 'Group', value: ComparisonMode.GROUP },
-                                        { label: 'Individual Group', value: ComparisonMode.INDIVIDUAL_GROUP },
                                     ]" placeholder="选择运行模式" style="width: 220px;" size="tiny" />
                                 </n-input-group>
                             </n-gi>
+                            <!-- Usage -->
                             <n-gi>
                                 <n-input-group class="flex items-center">
                                     <n-input-group-label size="tiny" class="input-label">
@@ -49,10 +189,10 @@
                                     <n-select v-model:value="rule.usage" :options="[
                                         { label: 'Include', value: ResultMode.INCLUDE },
                                         { label: 'Exclude', value: ResultMode.EXCLUDE },
-                                        { label: 'Subtract', value: ResultMode.SUBTRACT },
                                     ]" placeholder="选择运行模式" size="tiny" />
                                 </n-input-group>
                             </n-gi>
+                            <!-- Description -->
                             <n-gi class="input-expression">
                                 <n-input-group>
                                     <n-input-group-label size="tiny" class="input-label">Desc</n-input-group-label>
@@ -60,9 +200,9 @@
                                         type="text" />
                                 </n-input-group>
                             </n-gi>
+                            <!-- Expression -->
                             <n-gi class="input-expression">
-                                <div v-if="rule.mode === 'individual' || rule.mode === 'individual_group'"
-                                    class="flex gap-2">
+                                <div v-if="rule.mode === 'individual'" class="flex gap-2">
                                     <n-input-group class="flex items-center">
                                         <n-input-group-label size="tiny" class="input-label">
                                             Expr
@@ -99,6 +239,29 @@
                                     </div>
                                 </div>
                             </n-gi>
+                            <!-- Method -->
+                            <n-gi class="input-expression">
+                                <n-input-group v-if="rule.mode === 'individual'" class="flex items-center">
+                                    <n-input-group-label size="tiny" class="input-label">
+                                        Method
+                                    </n-input-group-label>
+                                    <n-select v-model:value="rule.method" :options="[
+                                        { label: 'Subtract Input', value: 'subtract_input' },
+                                        { label: 'Remove Input', value: 'remove_input' },
+                                        { label: 'Remove All', value: 'remove_all' },
+                                        { label: 'No Action', value: '' }
+                                    ]" placeholder="选择映射方式" size="tiny" />
+                                </n-input-group>
+                                <n-input-group v-else class="flex items-center">
+                                    <n-input-group-label size="tiny" class="input-label">
+                                        Method
+                                    </n-input-group-label>
+                                    <n-select v-model:value="rule.method" :options="[
+                                        { label: 'Remove All', value: 'remove_all' },
+                                        { label: 'No Action', value: '' }
+                                    ]" placeholder="选择映射方式" size="tiny" />
+                                </n-input-group>
+                            </n-gi>
                         </n-grid>
                     </n-space>
                 </template>
@@ -125,17 +288,17 @@
 </template>
 
 <script setup lang="ts">
-import { NForm, NFormItem, NSelect, NInput, NDynamicInput, NInputGroup, NInputGroupLabel, NDynamicTags, NCheckbox, NSwitch, NButton, NGrid, NGi } from 'naive-ui'
+import { NForm, NSpace, NFormItem, NSelect, NInput, NDynamicInput, NInputGroup, NInputGroupLabel, NDynamicTags, NCheckbox, NSwitch, NButton, NGrid, NGi, NText, NTooltip, NIcon } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useFlowStore } from '@/store/flow'
 import SchemaInput from '@/components/shared/SchemaInput.vue'
 import ExpressionBuilder from '@/components/expression-builder/ExpressionBuilder.vue'
+import { InformationCircle } from '@vicons/ionicons5'
 
 // Comparison mode mirror of backend enum
 enum ComparisonMode {
     GROUP = 'group',
     INDIVIDUAL = 'individual',
-    INDIVIDUAL_GROUP = 'individual_group',
 }
 
 enum ResultMode {
@@ -160,6 +323,21 @@ interface ComparerNodeConfig /* extends BaseNodeConfig */ {
         target_expression: string
         input_expression: string
     }[]
+    primary_mapping: {
+        target_field: string
+        input_field: string
+    }
+    mapping_method: 'subtract' | 'remove' | 'remove_all' | ''
+    linked_fields: string[]
+    use_classifier: boolean
+    classifier: {
+        target_field: string
+        input_field: string
+    }
+    priority: {
+        target_field: string
+        input_field: string
+    }
 }
 
 const { node } = defineProps<{ node: ComparerNodeConfig }>()
@@ -207,14 +385,17 @@ const tableOptions = computed(() => {
         }))
 })
 
-function getTableKeys(tableName?: string): string[] {
+function getTableKeys(tableName?: string, includeTableName: boolean = true): string[] {
     if (!tableName) return []
     const node = flowStore.nodes.find(n => n.data.name === tableName)
     const schema = (node?.data?.outputs as any)?.__TABLE__
     const keys: string[] = []
     if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
         for (const key of Object.keys(schema)) {
-            keys.push(`${tableName}.${key}`)
+            if (includeTableName)
+                keys.push(`${tableName}.${key}`)
+            else
+                keys.push(key)
         }
     }
     return keys
@@ -222,13 +403,18 @@ function getTableKeys(tableName?: string): string[] {
 
 function getAllTableKeys(): string[] {
     const keys: string[] = []
-    for (const option of tableOptions.value) {
-        const node = flowStore.nodes.find(n => n.data.name === option.value)
-        const schema = (node?.data?.outputs as any)?.__TABLE__
-        if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
-            for (const key of Object.keys(schema)) {
-                keys.push(`${option.value}.${key}`)
-            }
+    const targetTableName = node.target_table
+    const inputTableName = node.input_table
+    const targetKeys = getTableKeys(targetTableName, false)
+    const inputKeys = getTableKeys(inputTableName, false)
+    if (targetTableName) {
+        for (const key of targetKeys) {
+            keys.push(`${targetTableName}.${key}`)
+        }
+    }
+    if (inputTableName) {
+        for (const key of inputKeys) {
+            keys.push(`${inputTableName}.${key}`)
         }
     }
     return keys
@@ -242,7 +428,7 @@ function getAllTableKeys(): string[] {
     display: flex;
     align-items: center;
     gap: 8px;
-    width: 60px;
+    width: 70px;
     font-weight: bold;
 }
 

@@ -9,6 +9,7 @@ const TenantList = () => import('@/views/platform/tenants/TenantList.vue')
 const Dashboard = () => import('@/views/space/dashboard/Dashboard.vue')
 const FlowList = () => import('@/views/space/flows/FlowList.vue')
 const FlowEditor = () => import('@/views/space/flows/FlowEditor.vue')
+const FlowViewer = () => import('@/views/space/flows/FlowViewer.vue')
 const FlowRunner = () => import('@/views/space/flows/FlowRunner.vue')
 const TenantSettingsLayout = () => import('@/views/space/settings/TenantSettingsLayout.vue')
 const TenantProfile = () => import('@/views/space/settings/TenantProfile.vue')
@@ -62,6 +63,17 @@ const routes: RouteRecordRaw[] = [
                 path: 'space/flows/:id/edit',
                 name: 'FlowEditor',
                 component: FlowEditor,
+                meta: {
+                    fullscreen: true,
+                    showBackButton: true,
+                    backButtonText: '← 返回流程列表',
+                    backButtonTarget: '/space/flows'
+                }
+            },
+            {
+                path: 'space/flows/:id/view',
+                name: 'FlowViewer',
+                component: FlowViewer,
                 meta: {
                     fullscreen: true,
                     showBackButton: true,

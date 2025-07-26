@@ -17,7 +17,7 @@
                     </n-form-item-gi>
                     <!-- Label -->
                     <n-form-item-gi v-if="fieldType === 'inputs'" label="标签" label-width="80px"
-                        :feedback="!isLabelValid(input.label) ? '中文不超过 20 个字，英文不超过 20 个词' : ''"
+                        :feedback="!isLabelValid(input.label) ? '中文不超过 100 个字，英文不超过 100 个词' : ''"
                         :validation-status="!isLabelValid(input.label) ? 'warning' : 'success'">
                         <n-input v-model:value="input.label" placeholder="如：用户输入" />
                     </n-form-item-gi>

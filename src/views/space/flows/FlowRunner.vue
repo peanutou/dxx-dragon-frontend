@@ -1,5 +1,5 @@
 <template>
-    <n-split :max="0.7" :min="0.3" :default-size="0.4" class="h-full" style="height: 100%;">
+    <n-split :max="0.8" :min="0.2" :default-size="0.3" class="h-full" style="height: 100%;">
         <template #1>
             <!-- 左边内容 -->
             <n-card v-if="flowDefinition" :title="flowDefinition.name" size="small" class="h-full w-full"
@@ -56,6 +56,7 @@
             <ResultPreview 
                 :result="result || ''" 
                 :result-path="testMode ? 'root.data.result' : 'root'"
+                :data-tool="false"
                 @update:schema="(data) => emit('update:flow-schema', data)" />
         </template>
     </n-split>

@@ -1,5 +1,5 @@
 <template>
-    <n-split :max="0.7" :min="0.3" :default-size="0.4" class="h-full" style="height: 100%;">
+    <n-split :max="0.8" :min="0.2" :default-size="0.3" class="h-full" style="height: 100%;">
         <!-- 左侧面板 -->
         <template #1>
             <n-card :bordered="true" size="small" class="h-full w-full overflow-hidden"
@@ -44,7 +44,7 @@
         </template>
         <!-- 右侧结果预览面板 -->
         <template #2>
-            <ResultPreview :result="result || ''" :result-path="nodeResultPath"
+            <ResultPreview :result="result || ''" :result-path="nodeResultPath" :data-tool="true"
                 @update:schema="(data) => emit('update:node-schema', data)" />
         </template>
     </n-split>
