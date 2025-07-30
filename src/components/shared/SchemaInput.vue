@@ -11,7 +11,8 @@
                 </div>
                 <n-button @click="generateSchema" type="primary">生成 Schema</n-button>
                 <div style="max-height: 300px; overflow: auto;">
-                    <VueJsonPretty :data="schema" :deep="2" :showLine="false" showLength showIcon theme="dark" />
+                    <VueJsonPretty :data="schema" :deep="2" :showLine="false" showLength showIcon theme="dark"
+                        @nodeClick="onNodeClick" />
                 </div>
             </n-space>
             <template #footer>
@@ -59,6 +60,41 @@ function confirmSchema() {
         showModal.value = false
     } catch {
         message.error('生成的 Schema 格式无效')
+    }
+}
+
+function getValueByPath(obj: any, path: string): any {
+    const pathRegex = /(?:\.?([a-zA-Z_$][\w$]*))|\[(['"]?)(.*?)\2\]/g;
+    let match: RegExpExecArray | null;
+    let current = obj;
+    while ((match = pathRegex.exec(path)) !== null) {
+        const [, prop, , key] = match;
+        const nextKey = prop ?? key;
+        if (nextKey === 'root') continue; // Skip root
+        if (current == null) return undefined;
+        current = current[nextKey];
+    }
+
+    return current;
+}
+
+function onNodeClick(node: any) {
+    if (node) {
+        const nodePath = node.path || "root"
+        console.log(`Clicked node path: ${nodePath}`);
+        const value = getValueByPath(schema.value, nodePath);
+        if (value === undefined) {
+            window.$message.error(`无法找到路径 "${nodePath}" 对应的值`)
+            return;
+        }
+        // copy value to clipboard
+        navigator.clipboard.writeText(JSON.stringify(value, null, 2))
+            .then(() => {
+                window.$message.success(`已复制路径 "${nodePath}" 对应的值到剪贴板`)
+            })
+            .catch(() => {
+                window.$message.error(`复制路径 "${nodePath}" 对应的值到剪贴板失败`)
+            });
     }
 }
 </script>
