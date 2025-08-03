@@ -20,17 +20,33 @@
         <n-form-item>
             <template #label>
                 <div class="flex items-center justify-between w-full space-x-2">
+                    <span>系统提示</span>
+                    <n-button size="tiny" @click="showModal.systemPrompt = true" quaternary type="primary">大窗编辑</n-button>
+                </div>
+            </template>
+            <context-input v-model:modelValue="node.system_prompt" type="textarea" placeholder="请输入系统提示" />
+        </n-form-item>
+
+        <n-form-item>
+            <template #label>
+                <div class="flex items-center justify-between w-full space-x-2">
                     <span>Prompt 模板</span>
-                    <n-button size="tiny" @click="showModal = true" quaternary type="primary">大窗编辑</n-button>
+                    <n-button size="tiny" @click="showModal.template = true" quaternary type="primary">大窗编辑</n-button>
                 </div>
             </template>
             <context-input v-model:modelValue="node.template" type="textarea" placeholder="请输入 Prompt 模板" />
         </n-form-item>
     </n-form>
-    <n-modal v-model:show="showModal" title="编辑 Prompt 模板" preset="dialog" style="width: 80%;">
+    <n-modal v-model:show="showModal.template" title="编辑 Prompt 模板" preset="dialog" style="width: 80%;">
         <context-input v-model:modelValue="node.template" type="textarea" autosize style="min-height: 300px" />
         <template #action>
-            <n-button type="primary" @click="showModal = false">完成</n-button>
+            <n-button type="primary" @click="showModal.template = false">完成</n-button>
+        </template>
+    </n-modal>
+    <n-modal v-model:show="showModal.systemPrompt" title="编辑系统提示" preset="dialog" style="width: 80%;">
+        <context-input v-model:modelValue="node.system_prompt" type="textarea" autosize style="min-height: 300px" />
+        <template #action>
+            <n-button type="primary" @click="showModal.systemPrompt = false">完成</n-button>
         </template>
     </n-modal>
 </template>
@@ -42,5 +58,8 @@ import ContextInput from '@/components/shared/ContextInput.vue'
 
 // Destructure node directly for template binding
 const { node } = defineProps<{ node: Record<string, any> }>()
-const showModal = ref(false)
+const showModal = ref({
+    systemPrompt: false,
+    template: false
+})
 </script>

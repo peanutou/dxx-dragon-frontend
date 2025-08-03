@@ -1,26 +1,30 @@
 <template>
-    <NodeLayout
-        :node-type="props?.type"
-        :node-name="getNodeCapitalizedType(props?.data?.name || '')"
-        :selected="props.selected"
-        @run="handleRunClick"
-        :show-run-button="true"
-        :left-handles="1"
-        :right-handles="0"
-    >
+    <NodeLayout :node-type="props?.type"
+                :node-name="getNodeCapitalizedType(props?.data?.name || '')"
+                :selected="props.selected"
+                @run="handleRunClick"
+                :show-run-button="true"
+                :targetHandles="1"
+                :sourceHandles="0"
+                :handle-mode="handleMode">
     </NodeLayout>
 </template>
 
 <script setup lang="ts">
 import type { NodeProps } from '@vue-flow/core'
+import { computed } from 'vue'
+import { useNode } from '@vue-flow/core'
 import { getNodeCapitalizedType } from './shared-behavior'
 import NodeLayout from '@/components/shared/NodeLayout.vue'
 import { useFlowStore } from '@/store/flow'
 
 const props = defineProps<NodeProps>()
+const { node } = useNode()
+const handleMode = computed(() => {
+    return (typeof node.style === 'object' && node.style !== null && 'handlerMode' in node.style) ? (node.style as Record<string, any>).handlerMode : 'TOP-BOTTOM'
+})
 const emit = defineEmits(['updateNodeInternals', 'node-event'])
 const flowStore = useFlowStore()
-
 function handleRunClick() {
     flowStore.setTestNode(props)
 }

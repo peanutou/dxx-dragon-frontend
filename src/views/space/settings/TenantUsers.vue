@@ -1,25 +1,45 @@
 <template>
     <div>
-        <n-modal v-model:show="showCreateModal" preset="dialog" title="创建用户">
+        <n-modal v-model:show="showCreateModal"
+                 preset="dialog"
+                 title="创建用户">
             <n-form :model="createForm">
-                <n-form-item label="用户名" path="username">
-                    <n-input v-model:value="createForm.username" placeholder="请输入用户名" />
+                <n-form-item label="用户名"
+                             path="username">
+                    <n-input v-model:value="createForm.username"
+                             placeholder="请输入用户名" />
                 </n-form-item>
-                <n-form-item label="邮箱" path="email">
-                    <n-input v-model:value="createForm.email" placeholder="请输入邮箱" />
+                <n-form-item label="邮箱"
+                             path="email">
+                    <n-input v-model:value="createForm.email"
+                             placeholder="请输入邮箱" />
                 </n-form-item>
-                <n-form-item label="初始密码" path="password">
-                    <n-input v-model:value="createForm.password" type="password" placeholder="请输入初始密码" />
+                <n-form-item label="初始密码"
+                             path="password">
+                    <n-input v-model:value="createForm.password"
+                             type="password"
+                             placeholder="请输入初始密码" />
                 </n-form-item>
-                <n-form-item label="确认初始密码" path="confirm_password">
-                    <n-input v-model:value="createForm.confirm_password" type="password" placeholder="请再次输入初始密码" />
+                <n-form-item label="确认初始密码"
+                             path="confirm_password">
+                    <n-input v-model:value="createForm.confirm_password"
+                             type="password"
+                             placeholder="请再次输入初始密码" />
                 </n-form-item>
-                <n-form-item label="角色" path="roles">
-                    <n-select v-model:value="createForm.roles" :options="roleOptions" placeholder="请选择角色" multiple
-                        clearable :render-label="renderRoleLabel" />
+                <n-form-item label="角色"
+                             path="roles">
+                    <n-select v-model:value="createForm.roles"
+                              :options="roleOptions"
+                              placeholder="请选择角色"
+                              multiple
+                              clearable
+                              :render-label="renderRoleLabel" />
                 </n-form-item>
-                <n-form-item label="状态" path="is_active">
-                    <n-switch v-model:value="createForm.is_active" :checked-value="true" :unchecked-value="false">
+                <n-form-item label="状态"
+                             path="is_active">
+                    <n-switch v-model:value="createForm.is_active"
+                              :checked-value="true"
+                              :unchecked-value="false">
                         <template #checked>启用</template>
                         <template #unchecked>停用</template>
                     </n-switch>
@@ -27,22 +47,32 @@
             </n-form>
             <template #action>
                 <n-button @click="closeCreateModal">取消</n-button>
-                <n-button type="primary" @click="handleCreateUser">确定</n-button>
+                <n-button type="primary"
+                          @click="handleCreateUser">确定</n-button>
             </template>
         </n-modal>
-        <n-card title="用户列表" :loading="loading">
+        <n-card title="用户列表"
+                :loading="loading">
             <div class="mb-4 space-y-2">
                 <div class="flex justify-between items-center">
                     <n-space>
-                        <n-button type="primary" @click="openCreateModal">添加用户</n-button>
-                        <n-button type="error" @click="handleDeleteUsers" :disabled="selectedRowKeys.length === 0">
+                        <n-button type="primary"
+                                  @click="openCreateModal">添加用户</n-button>
+                        <n-button type="error"
+                                  @click="handleDeleteUsers"
+                                  :disabled="selectedRowKeys.length === 0">
                             删除用户
                         </n-button>
                     </n-space>
                 </div>
             </div>
-            <n-data-table remote :columns="columns" :data="users" :loading="loading" :row-key="(row) => row.user_id"
-                v-model:checked-row-keys="selectedRowKeys" :pagination="pagination" />
+            <n-data-table remote
+                          :columns="columns"
+                          :data="users"
+                          :loading="loading"
+                          :row-key="(row) => row.user_id"
+                          v-model:checked-row-keys="selectedRowKeys"
+                          :pagination="pagination" />
         </n-card>
     </div>
 </template>
@@ -51,7 +81,7 @@
 import { ref, reactive, onMounted, h, watch } from 'vue'
 import axios from '@/utils/axios'
 import { TenantSpaceAPI } from '@/apis/endpoints'
-import { NCard, NDataTable, NModal, NForm, NFormItem, NInput, NSelect, NTooltip } from 'naive-ui'
+import { NCard, NDataTable, NModal, NForm, NFormItem, NInput, NSelect, NTooltip, NButton } from 'naive-ui'
 
 const loading = ref(false)
 const users = ref([])
@@ -141,13 +171,23 @@ const columns = [
         type: 'selection' as const,
         width: 50,
     },
-    { title: '用户名', key: 'name' },
+    {
+        title: '用户名',
+        key: 'name',
+    },
     {
         title: '操作',
         key: 'actions',
-        render: (row: { username: string; email: string; role: string }) =>
-            h('n-button',
-                { size: 'small', onClick: () => editUser(row) }, '编辑'
+        render: (row: { name: string; email: string }) =>
+            h(
+                'a',
+                {
+                    href: 'javascript:void(0)',
+                    style: { color: '#2080f0', cursor: 'pointer', marginRight: '12px' },
+                    onClick: () => editUser(row),
+                    size: 'small',
+                },
+                '编辑'
             )
     },
     { title: '邮箱', key: 'email' },
@@ -228,9 +268,9 @@ onMounted(async () => {
     await loadRoles()
 })
 
-function editUser(row: { username: string; email: string; role: string }) {
+function editUser(row: { name: string; email: string }) {
     // 编辑用户逻辑
-    console.log('Editing user:', row.username)
+    console.log('Editing user:', row.name, row)
 }
 </script>
 

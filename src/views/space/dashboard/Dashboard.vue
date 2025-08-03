@@ -3,25 +3,32 @@
         <n-card title="欢迎进入管理后台">
             <n-input-group>
                 <n-input-group-label class="input-label">当前用户</n-input-group-label>
-                <n-input :value="userStore.user?.email" readonly />
+                <n-input :value="userStore.user?.email"
+                         readonly />
             </n-input-group>
             <n-input-group>
-                <n-input-group-label class="input-label">当前用户 ID</n-input-group-label>
-                <n-input :value="userStore.user?.user_id" readonly />
+                <n-input-group-label class="input-label">User ID</n-input-group-label>
+                <n-input :value="userStore.user?.user_id"
+                         readonly />
             </n-input-group>
             <n-input-group>
-                <n-input-group-label class="input-label">当前租户 ID</n-input-group-label>
-                <n-input :value="userStore.user?.tenant_id" readonly />
+                <n-input-group-label class="input-label">Tenant ID</n-input-group-label>
+                <n-input :value="userStore.user?.tenant_id"
+                         readonly />
             </n-input-group>
             <n-input-group>
                 <n-input-group-label class="input-label">用户客户端密钥</n-input-group-label>
-                <n-input :value="clientKey" readonly type="password" />
-                <n-button type="primary" class="ml-2" @click="copyToClipboard(clientKey)">
-                    复制
-                </n-button>
+                <n-input :value="clientKey"
+                         readonly
+                         type="password" />
+                <n-button type="primary"
+                          class="ml-2"
+                          @click="copyToClipboard(clientKey)"
+                          tabindex="0">复制</n-button>
             </n-input-group>
             <n-divider />
-            <n-button type="primary" @click="logout">退出登录</n-button>
+            <n-button type="primary"
+                      @click="logout">退出登录</n-button>
         </n-card>
     </div>
 </template>
@@ -50,6 +57,7 @@ watchEffect(async () => {
         clientKey.value = res.data.data
     } catch (err) {
         console.error('获取用户客户端密钥失败:', err)
+        window.$message.error('获取用户客户端密钥失败，请稍后重试')
         clientKey.value = '获取失败'
     }
 })

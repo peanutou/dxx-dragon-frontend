@@ -1,11 +1,9 @@
 <template>
-    <NodeLayout
-        :node-type="props?.type"
-        :node-name="getNodeCapitalizedType(props?.data?.name || '')"
-        :selected="props.selected"
-        @run="handleRunClick"
-        :show-run-button="true"
-    >
+    <NodeLayout :node-type="props?.type"
+                :node-name="getNodeCapitalizedType(props?.data?.name || '')"
+                :selected="props.selected"
+                @run="handleRunClick"
+                :show-run-button="true">
     </NodeLayout>
 </template>
 

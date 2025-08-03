@@ -1,32 +1,47 @@
 <template>
-    <div v-if="selectedNode" class="pt-4 flex flex-col h-full">
+    <div v-if="selectedNode"
+         class="pt-4 flex flex-col h-full">
         <!-- Scrollable content area -->
-        <n-tabs type="line" animated class="h-full" 
-            :pane-class="'h-full flex flex-col overflow-auto'"
-            :pane-wrapper-class="'h-full'">
-            <n-tab-pane name="Node Config" tab="节点参数">
+        <n-tabs type="line"
+                animated
+                class="h-full"
+                :pane-class="'h-full flex flex-col overflow-auto'"
+                :pane-wrapper-class="'h-full'">
+            <n-tab-pane name="Node Config"
+                        tab="节点参数">
                 <div class="flex-1 overflow-auto">
-                    <NodeFormRenderer :type="selectedNode.type ?? ''" :data="localData" />
+                    <node-form-renderer :type="selectedNode.type ?? ''"
+                                        :data="localData" />
                 </div>
                 <!-- Sticky save button at bottom -->
-                <n-row :gutter="[24, 0]" class="border-t border-gray-600 pt-3 items-center">
+                <n-row :gutter="[24, 0]"
+                       class="border-t border-gray-600 pt-3 items-center">
                     <n-col :span="8">
-                        <SchemaInput v-model:schema="localData.outputs" link-text="输出 Schema (可选)"
-                            placeholder="请输入 JSON 示例数据" :key="selectedNode.id" />
+                        <schema-input v-model:schema="localData.outputs"
+                                      link-text="输出 Schema (可选)"
+                                      placeholder="请输入 JSON 示例数据"
+                                      :key="selectedNode.id" />
                     </n-col>
                     <n-col :span="16">
                         <div class="flex justify-end">
-                            <n-button type="primary" @click="submit">保存参数</n-button>
+                            <n-button type="primary"
+                                      @click="submitNodeData">
+                                保存参数
+                            </n-button>
                         </div>
                     </n-col>
                 </n-row>
             </n-tab-pane>
-            <n-tab-pane name="Node Settings" tab="节点配置">
-                <NodeSettings :selectedNode="selectedNode" />
+            <n-tab-pane name="Node Settings"
+                        tab="连接配置">
+                <div class="flex-1 overflow-auto">
+                    <NodeSettings :selectedNode="selectedNode" />
+                </div>
             </n-tab-pane>
         </n-tabs>
     </div>
-    <div v-else class="text-gray-400 text-sm">请选择一个节点进行配置</div>
+    <div v-else
+         class="text-gray-400 text-sm">请选择一个节点进行配置</div>
 </template>
 
 <script setup lang="ts">
@@ -66,11 +81,15 @@ watch(
     { immediate: true, deep: true }
 )
 
-function submit() {
+function submitNodeData() {
     try {
         emit('update:config', toRaw(localData))
     } catch (e) {
         window.$message?.error?.('请检查模板 JSON 格式是否正确:')
     }
+}
+
+function submitNodeSettings() {
+
 }
 </script>

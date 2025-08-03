@@ -1,55 +1,90 @@
 <template>
-    <n-modal v-model:show="showEditModal" title="编辑租户" preset="dialog">
-        <n-form :model="editForm" ref="editFormRef" label-width="80">
-            <n-form-item label="名称" path="name">
-                <n-input v-model:value="editForm.name" placeholder="请输入名称" />
+    <n-modal v-model:show="showEditModal"
+             title="编辑租户"
+             preset="dialog">
+        <n-form :model="editForm"
+                ref="editFormRef"
+                label-width="80">
+            <n-form-item label="名称"
+                         path="name">
+                <n-input v-model:value="editForm.name"
+                         placeholder="请输入名称" />
             </n-form-item>
-            <n-form-item label="域名前缀" path="slug">
-                <n-input v-model:value="editForm.slug" disabled />
+            <n-form-item label="域名前缀"
+                         path="slug">
+                <n-input v-model:value="editForm.slug"
+                         disabled />
             </n-form-item>
-            <n-form-item label="方案" path="plan">
-                <n-input v-model:value="editForm.plan" disabled />
+            <n-form-item label="方案"
+                         path="plan">
+                <n-input v-model:value="editForm.plan"
+                         disabled />
             </n-form-item>
-            <n-form-item label="启用状态" path="is_active">
+            <n-form-item label="启用状态"
+                         path="is_active">
                 <n-switch v-model:value="editForm.is_active" />
             </n-form-item>
         </n-form>
         <template #action>
             <n-button @click="showEditModal = false">取消</n-button>
-            <n-button type="primary" @click="submitEdit">保存</n-button>
+            <n-button type="primary"
+                      @click="submitEdit">保存</n-button>
         </template>
     </n-modal>
-    <n-modal v-model:show="showCreateModal" title="创建租户" preset="dialog">
-        <n-form :model="createForm" :rules="createRules" ref="formRef" label-width="80">
-            <n-form-item label="名称" path="name">
-                <n-input v-model:value="createForm.name" placeholder="请输入名称" />
+    <n-modal v-model:show="showCreateModal"
+             title="创建租户"
+             preset="dialog">
+        <n-form :model="createForm"
+                :rules="createRules"
+                ref="formRef"
+                label-width="80">
+            <n-form-item label="名称"
+                         path="name">
+                <n-input v-model:value="createForm.name"
+                         placeholder="请输入名称" />
             </n-form-item>
-            <n-form-item label="域名前缀" path="slug">
-                <n-input v-model:value="createForm.slug" placeholder="域名前置，（例如 {xyz}.example.com）" />
+            <n-form-item label="域名前缀"
+                         path="slug">
+                <n-input v-model:value="createForm.slug"
+                         placeholder="域名前置，（例如 {xyz}.example.com）" />
             </n-form-item>
-            <n-form-item label="方案" path="plan">
-                <n-input v-model:value="createForm.plan" placeholder="如 basic / pro" disabled />
+            <n-form-item label="方案"
+                         path="plan">
+                <n-input v-model:value="createForm.plan"
+                         placeholder="如 basic / pro"
+                         disabled />
             </n-form-item>
-            <n-form-item label="启用状态" path="is_active">
+            <n-form-item label="启用状态"
+                         path="is_active">
                 <n-switch v-model:value="createForm.is_active" />
             </n-form-item>
         </n-form>
         <template #action>
             <n-button @click="showCreateModal = false">取消</n-button>
-            <n-button type="primary" @click="submitCreate">创建</n-button>
+            <n-button type="primary"
+                      @click="submitCreate">创建</n-button>
         </template>
     </n-modal>
     <n-card title="租户列表">
         <div class="mb-4 flex justify-between items-center">
             <n-space>
-                <n-button type="primary" @click="showCreateModal = true">创建租户</n-button>
-                <n-button type="error" @click="handleDeleteTenants"
-                    :disabled="checkedRowKeys.length === 0">删除选中</n-button>
+                <n-button type="primary"
+                          @click="showCreateModal = true">创建租户</n-button>
+                <n-button type="error"
+                          @click="handleDeleteTenants"
+                          :disabled="checkedRowKeys.length === 0">删除选中</n-button>
             </n-space>
         </div>
-        <n-data-table :columns="columns" :data="tenants" :loading="loading" :pagination="pagination" remote
-            :row-key="(row: Tenant) => row.tenant_id" checkable :checked-row-keys="checkedRowKeys"
-            @update:checked-row-keys="handleSelectionChange" @update:sorter="handleSorterChange" />
+        <n-data-table :columns="columns"
+                      :data="tenants"
+                      :loading="loading"
+                      :pagination="pagination"
+                      remote
+                      :row-key="(row: Tenant) => row.tenant_id"
+                      checkable
+                      :checked-row-keys="checkedRowKeys"
+                      @update:checked-row-keys="handleSelectionChange"
+                      @update:sorter="handleSorterChange" />
     </n-card>
 </template>
 
@@ -208,6 +243,7 @@ const submitEdit = async () => {
         showEditModal.value = false
         fetchTenants()
     } catch (err) {
+        window.$message.error(`更新失败：${err}`)
         console.error('更新失败:', err)
     }
 }
@@ -228,6 +264,7 @@ const handleDeleteTenants = async () => {
         fetchTenants()
     } catch (err) {
         console.error('删除租户失败:', err)
+        window.$message.error('删除租户失败:')
     } finally {
         loading.value = false
     }

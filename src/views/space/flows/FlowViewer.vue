@@ -1,17 +1,30 @@
 <template>
-    <n-split :max="0.8" :min="0.2" :default-size="0.3" class="h-full" style="height: 100%;">
+    <n-split :max="0.8"
+             :min="0.2"
+             :default-size="0.3"
+             class="h-full"
+             style="height: 100%;">
         <template #1>
-            <n-card title="流程运行列表" class="p-4"
-                style="height: 100%; max-height: 100%; display: flex; flex-direction: column;">
-                <n-data-table :columns="columns" :data="flowRuns" :row-key="rowKey" :loading="loading"
-                    max-height="calc(100vh - 300px)" virtual-scroll />
+            <n-card title="流程运行列表"
+                    class="p-4"
+                    style="height: 100%; max-height: 100%; display: flex; flex-direction: column;">
+                <n-data-table :columns="columns"
+                              :data="flowRuns"
+                              :row-key="rowKey"
+                              :loading="loading"
+                              max-height="calc(100vh - 300px)"
+                              virtual-scroll />
                 <template #action>
-                    <n-button class="mt-4" @click="loadMore" :loading="loading">加载更多</n-button>
+                    <n-button class="mt-4"
+                              @click="loadMore"
+                              :loading="loading">加载更多</n-button>
                 </template>
             </n-card>
         </template>
         <template #2>
-            <result-preview v-if="currentFlowRunResult" :result="currentFlowRunResult" :result-path="'root'" />
+            <result-preview v-if="currentFlowRunResult"
+                            :result="currentFlowRunResult"
+                            :result-path="'root'" />
         </template>
     </n-split>
 </template>
@@ -84,14 +97,18 @@ const columns: DataTableColumns<FlowRunEntity> = [
                 {
                     default: () => {
                         return h('div', {
-                            class: 'flex flex-col items-start space-x-2',
+                            class: 'flex flex-col items-start space-x-2 space-y-1',
                         }, [
                             h('div', { class: 'max-w-100 overflow-hidden text-ellipsis whitespace-nowrap' }, row.flow_run_id),
                             h('div', {
                                 class: 'gap-1 flex items-center',
                             }, [
-                                h(NTag, { class: 'text-gray-500' }, row.flow_version),
-                                h(NTag, { class: 'text-gray-500', type: row.run_mode === 'flow-prod' ? 'info' : 'warning' }, row.run_mode)
+                                h(NTag, { class: 'text-gray-500', size: 'small' }, {
+                                    default: () => row.flow_version || '未发布'
+                                }),
+                                h(NTag, { class: 'text-gray-500', size: 'small', type: row.run_mode === 'flow-prod' ? 'info' : 'warning' }, {
+                                    default: () => row.run_mode
+                                })
                             ])
                         ]);
                     }
@@ -106,11 +123,12 @@ const columns: DataTableColumns<FlowRunEntity> = [
         render: (row) => {
             const date = new Date(row.start_time)
             return h('div', [
-                h('div', date.toLocaleDateString()),
+                h('div', { style: { fontSize: '12px', fontFamily: 'monospace' } }, date.toLocaleDateString()),
                 h('div', {
                     style: {
                         fontSize: '12px',
-                        color: '#888'
+                        color: '#888',
+                        fontFamily: 'monospace'
                     }
                 }, date.toLocaleTimeString())
             ])
@@ -125,7 +143,7 @@ const columns: DataTableColumns<FlowRunEntity> = [
             const minutes = Math.floor(seconds / 60);
             const hours = Math.floor(minutes / 60);
             const pad = (n: number) => Math.ceil(n).toString().padStart(2, '0');
-            return `${pad(hours)}:${pad(minutes % 60)}:${pad(seconds % 60)}`;
+            return h('span', { style: { fontFamily: 'monospace', fontSize: '12px' } }, `${pad(hours)}:${pad(minutes % 60)}:${pad(seconds % 60)}`,);
         }
     },
     {
@@ -134,13 +152,13 @@ const columns: DataTableColumns<FlowRunEntity> = [
         width: '80px',
         render: (row) => {
             if (row.status === 'success') {
-                return h(NTag, { type: 'success' }, { default: () => '成功' });
+                return h(NTag, { type: 'success', size: 'small' }, { default: () => '成功' });
             }
             if (row.status === 'failed') {
-                return h(NTag, { type: 'error' }, { default: () => '失败' });
+                return h(NTag, { type: 'error', size: 'small' }, { default: () => '失败' });
             }
             // 默认状态处理
-            return h(NTag, { type: 'warning' }, { default: () => '未知' });
+            return h(NTag, { type: 'warning', size: 'small' }, { default: () => '未知' });
         }
     }
 ];

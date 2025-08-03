@@ -1,78 +1,124 @@
 <template>
-    <n-dynamic-input v-model:value="props.object[props.fieldName]" :min="0" :on-create="createEmptyInput"
-        :item-class="'space-y-2'" show-sort-button>
+    <n-dynamic-input v-model:value="props.object[props.fieldName]"
+                     :min="0"
+                     :on-create="createEmptyInput"
+                     :item-class="'space-y-2'"
+                     show-sort-button>
         <template #default="{ value: input, index }">
-            <n-form class="w-full border-b border-gray-600" label-placement="left">
+            <n-form class="w-full border-b border-gray-600"
+                    label-placement="left">
                 <n-grid cols="2">
                     <!-- Name -->
-                    <n-form-item-gi label="名称" label-width="80px" class="flex-1"
-                        :feedback="!isValidName(input.name) ? '字母或下划线开头，仅包含字母、数字和下划线' : ''"
-                        :validation-status="!isValidName(input.name) ? 'warning' : 'success'">
-                        <n-input v-model:value="input.name" placeholder="如：text" />
+                    <n-form-item-gi label="名称"
+                                    label-width="80px"
+                                    class="flex-1"
+                                    :feedback="!isValidName(input.name) ? '字母或下划线开头，仅包含字母、数字和下划线' : ''"
+                                    :validation-status="!isValidName(input.name) ? 'warning' : 'success'">
+                        <n-input v-model:value="input.name"
+                                 placeholder="如：text" />
                     </n-form-item-gi>
                     <!-- Type -->
-                    <n-form-item-gi label="类型" label-width="80px" class="flex-1">
-                        <n-select v-model:value="input.type" :options="options"
-                            @update:value="handleTypeChange(input)" />
+                    <n-form-item-gi label="类型"
+                                    label-width="80px"
+                                    class="flex-1">
+                        <n-select v-model:value="input.type"
+                                  :options="options"
+                                  @update:value="handleTypeChange(input)" />
                     </n-form-item-gi>
                     <!-- Label -->
-                    <n-form-item-gi v-if="fieldType === 'inputs'" label="标签" label-width="80px"
-                        :feedback="!isLabelValid(input.label) ? '中文不超过 100 个字，英文不超过 100 个词' : ''"
-                        :validation-status="!isLabelValid(input.label) ? 'warning' : 'success'">
-                        <n-input v-model:value="input.label" placeholder="如：用户输入" />
+                    <n-form-item-gi v-if="fieldType === 'inputs'"
+                                    label="标签"
+                                    label-width="80px"
+                                    :feedback="!isLabelValid(input.label) ? '中文不超过 100 个字，英文不超过 100 个词' : ''"
+                                    :validation-status="!isLabelValid(input.label) ? 'warning' : 'success'">
+                        <n-input v-model:value="input.label"
+                                 placeholder="如：用户输入" />
                     </n-form-item-gi>
                     <!-- Required -->
-                    <n-form-item-gi v-if="fieldType === 'inputs'" label="必填" label-width="80px">
+                    <n-form-item-gi v-if="fieldType === 'inputs'"
+                                    label="必填"
+                                    label-width="80px">
                         <n-switch v-model:value="input.required" />
                     </n-form-item-gi>
 
                     <!------------------------->
 
                     <!-- Select: for [Input] -->
-                    <n-form-item-gi v-if="input.type === 'select'" label="下拉选项" label-width="80px" :span="2">
-                        <n-dynamic-input v-model:value="input.options" :min="0" :on-create="() => ''" show-sort-button>
+                    <n-form-item-gi v-if="input.type === 'select'"
+                                    label="下拉选项"
+                                    label-width="80px"
+                                    :span="2">
+                        <n-dynamic-input v-model:value="input.options"
+                                         :min="0"
+                                         :on-create="() => ''"
+                                         show-sort-button>
                             <template #default="{ value: option, index: optIndex }">
                                 <div class="flex items-center space-x-2 w-full">
-                                    <n-input v-model:value="input.options[optIndex]" placeholder="请输入选项内容"
-                                        class="flex-1" />
+                                    <n-input v-model:value="input.options[optIndex]"
+                                             placeholder="请输入选项内容"
+                                             class="flex-1" />
                                 </div>
                             </template>
                         </n-dynamic-input>
                     </n-form-item-gi>
 
                     <!-- String: for [Input, Variable] -->
-                    <n-form-item-gi v-if="input.type === 'string'" label="默认值" label-width="80px" class="flex-1"
-                        :span="2">
-                        <n-input v-if="fieldType === 'inputs'" v-model:value="input.default"
-                            :placeholder="placeholder(input.type)" class="w-full" />
-                        <context-input v-if="fieldType === 'variables'" v-model:modelValue="input.expression"
-                            :placeholder="placeholder(input.type)" class="w-full" />
+                    <n-form-item-gi v-if="input.type === 'string'"
+                                    label="默认值"
+                                    label-width="80px"
+                                    class="flex-1"
+                                    :span="2">
+                        <n-input v-if="fieldType === 'inputs'"
+                                 v-model:value="input.default"
+                                 :placeholder="placeholder(input.type)"
+                                 class="w-full" />
+                        <context-input v-if="fieldType === 'variables'"
+                                       v-model:modelValue="input.expression"
+                                       :placeholder="placeholder(input.type)"
+                                       class="w-full" />
                     </n-form-item-gi>
 
                     <!-- Number: for [Input, Variable] -->
-                    <n-form-item-gi v-if="input.type === 'number'" label="默认值" label-width="80px" class="flex-1"
-                        :span="2" :feedback="!isValidNumber(input.expression) ? '请输入有效的数字' : ''"
-                        :validation-status="!isValidNumber(input.expression) ? 'warning' : 'success'">
-                        <n-input-number v-if="fieldType === 'inputs'" v-model:value="input.default"
-                            :placeholder="placeholder(input.type)" class="w-full" />
-                        <context-input v-if="fieldType === 'variables'" v-model:modelValue="input.expression"
-                            :placeholder="placeholder(input.type)" class="w-full" />
+                    <n-form-item-gi v-if="input.type === 'number'"
+                                    label="默认值"
+                                    label-width="80px"
+                                    class="flex-1"
+                                    :span="2"
+                                    :feedback="!isValidNumber(input.expression) ? '请输入有效的数字' : ''"
+                                    :validation-status="!isValidNumber(input.expression) ? 'warning' : 'success'">
+                        <n-input-number v-if="fieldType === 'inputs'"
+                                        v-model:value="input.default"
+                                        :placeholder="placeholder(input.type)"
+                                        class="w-full" />
+                        <context-input v-if="fieldType === 'variables'"
+                                       v-model:modelValue="input.expression"
+                                       :placeholder="placeholder(input.type)"
+                                       class="w-full" />
                     </n-form-item-gi>
 
                     <!-- Select: for [Input] -->
-                    <n-form-item-gi v-if="input.type === 'select'" label="默认值" label-width="80px" class="flex-1"
-                        :span="2">
-                        <n-select v-model:value="input.default" :placeholder="placeholder(input.type)"
-                            :options="[{ label: '', value: null }, ...input.options.map((option: string) => ({ label: option, value: option }))]"
-                            class="w-full" />
+                    <n-form-item-gi v-if="input.type === 'select'"
+                                    label="默认值"
+                                    label-width="80px"
+                                    class="flex-1"
+                                    :span="2">
+                        <n-select v-model:value="input.default"
+                                  :placeholder="placeholder(input.type)"
+                                  :options="[{ label: '', value: null }, ...input.options.map((option: string) => ({ label: option, value: option }))]"
+                                  class="w-full" />
                     </n-form-item-gi>
 
                     <!-- Boolean: for [Input, Variable] -->
-                    <n-form-item-gi v-if="input.type === 'boolean'" label="默认值" label-width="80px" class="flex-1"
-                        :span="2" :feedback="!isValidBoolean(input.expression) ? '请输入 true 或 false' : ''"
-                        :validation-status="!isValidBoolean(input.expression) ? 'warning' : 'success'">
-                        <n-switch v-if="fieldType === 'inputs'" v-model:value="input.default"
-                            :placeholder="placeholder(input.type)">
+                    <n-form-item-gi v-if="input.type === 'boolean'"
+                                    label="默认值"
+                                    label-width="80px"
+                                    class="flex-1"
+                                    :span="2"
+                                    :feedback="!isValidBoolean(input.expression) ? '请输入 true 或 false' : ''"
+                                    :validation-status="!isValidBoolean(input.expression) ? 'warning' : 'success'">
+                        <n-switch v-if="fieldType === 'inputs'"
+                                  v-model:value="input.default"
+                                  :placeholder="placeholder(input.type)">
                             <template #checked>
                                 true
                             </template>
@@ -80,32 +126,47 @@
                                 false
                             </template>
                         </n-switch>
-                        <context-input v-if="fieldType === 'variables'" v-model:modelValue="input.expression"
-                            :placeholder="placeholder(input.type)"></context-input>
+                        <context-input v-if="fieldType === 'variables'"
+                                       v-model:modelValue="input.expression"
+                                       :placeholder="placeholder(input.type)"></context-input>
                     </n-form-item-gi>
 
                     <!-- File: for [Input] -->
-                    <n-form-item-gi v-if="input.type === 'file'" label="默认值" label-width="80px" class="flex-1"
-                        :span="2">
-                        <n-input v-if="fieldType === 'inputs'" v-model:value="input.default"
-                            :placeholder="placeholder(input.type)" class="w-full" />
+                    <n-form-item-gi v-if="input.type === 'file'"
+                                    label="默认值"
+                                    label-width="80px"
+                                    class="flex-1"
+                                    :span="2">
+                        <n-input v-if="fieldType === 'inputs'"
+                                 v-model:value="input.default"
+                                 :placeholder="placeholder(input.type)"
+                                 class="w-full" />
                     </n-form-item-gi>
 
-                    <!-- Object: for [Variable] -->
-                    <n-form-item-gi v-if="input.type === 'object'" label="默认值" label-width="80px" class="flex-1"
-                        :span="2"
-                        :feedback="!isValidObject(input.expression) ? `请输入有效的对象格式，如：${JSON.stringify({ key: 'value' })}` : ''"
-                        :validation-status="!isValidObject(input.expression) ? 'warning' : 'success'">
-                        <context-input v-if="fieldType === 'variables'" v-model:modelValue="input.expression"
-                            :placeholder="placeholder(input.type)" type="textarea"></context-input>
+                    <!-- Object: for [Input, Variable] -->
+                    <n-form-item-gi v-if="input.type === 'object'"
+                                    label="默认值"
+                                    label-width="80px"
+                                    class="flex-1"
+                                    :span="2"
+                                    :feedback="!isValidObject(input.expression) ? `请输入有效的对象格式，如：${JSON.stringify({ key: 'value' })}` : ''"
+                                    :validation-status="!isValidObject(input.expression) ? 'warning' : 'success'">
+                        <context-input v-model:modelValue="input.expression"
+                                       :placeholder="placeholder(input.type)"
+                                       type="textarea"></context-input>
                     </n-form-item-gi>
 
-                    <!-- Array: for [Variable] -->
-                    <n-form-item-gi v-if="input.type === 'array'" label="默认值" label-width="80px" class="flex-1"
-                        :span="2" :feedback="!isValidArray(input.expression) ? '请输入有效的数组格式，如：[1, 2, 3]' : ''"
-                        :validation-status="!isValidArray(input.expression) ? 'warning' : 'success'">
-                        <context-input v-if="fieldType === 'variables'" v-model:modelValue="input.expression"
-                            :placeholder="placeholder(input.type)" type="textarea"></context-input>
+                    <!-- Array: for [Input, Variable] -->
+                    <n-form-item-gi v-if="input.type === 'array'"
+                                    label="默认值"
+                                    label-width="80px"
+                                    class="flex-1"
+                                    :span="2"
+                                    :feedback="!isValidArray(input.expression) ? '请输入有效的数组格式，如：[1, 2, 3]' : ''"
+                                    :validation-status="!isValidArray(input.expression) ? 'warning' : 'success'">
+                        <context-input v-model:modelValue="input.expression"
+                                       :placeholder="placeholder(input.type)"
+                                       type="textarea"></context-input>
                     </n-form-item-gi>
                 </n-grid>
             </n-form>
@@ -141,7 +202,9 @@ const flowInputOptions = [
     { label: 'number', value: 'number' },
     { label: 'boolean', value: 'boolean' },
     { label: 'select', value: 'select' },
-    { label: 'file', value: 'file' }
+    { label: 'file', value: 'file' },
+    { label: 'object', value: 'object' },
+    { label: 'array', value: 'array' }
 ]
 const flowVariablesOptions = [
     { label: 'string', value: 'string' },

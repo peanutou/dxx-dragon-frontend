@@ -1,5 +1,7 @@
 <template>
-    <div ref="containerRef" style="width: 100%; height: 100%; min-height: 400px;"></div>
+    <div ref="containerRef"
+         style="width: 100%; height: 100%;"
+         :style="{ minHeight: height ? height : '400px' }"></div>
 </template>
 
 <script setup lang="ts">
@@ -8,8 +10,10 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 
 // 父组件可以传入 code 和 language
 const props = defineProps<{
-    modelValue: string,
-    language?: string
+    modelValue?: string,
+    defaultValue?: string,
+    language?: string,
+    height?: string | number
 }>()
 
 const emit = defineEmits<{
@@ -44,8 +48,13 @@ self.MonacoEnvironment = {
 
 onMounted(() => {
     if (containerRef.value) {
+        if (editor) {
+            editor.dispose() // 确保之前的编辑器被销毁
+        }
+        // 创建 Monaco 编辑器实例
+        const initValue = props.defaultValue || props.modelValue || '';
         editor = monaco.editor.create(containerRef.value, {
-            value: props.modelValue,
+            value: initValue,
             language: props.language || 'javascript',
             theme: 'vs-dark',
             automaticLayout: true,  // 自动适应容器大小
@@ -60,7 +69,7 @@ onMounted(() => {
 
 // 响应外部 value 的变化
 watch(() => props.modelValue, (newVal) => {
-    if (editor && newVal !== editor.getValue()) {
+    if (editor && newVal && newVal !== editor.getValue()) {
         editor.setValue(newVal)
     }
 })

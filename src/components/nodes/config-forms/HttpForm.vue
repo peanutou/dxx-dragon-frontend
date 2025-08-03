@@ -99,7 +99,7 @@
                         <n-input-group>
                             <n-input-group-label class="w-[70px]">Value</n-input-group-label>
                             <!-- <n-input v-model:value="value.value" placeholder="Body Value" /> -->
-                            <context-input v-model:modelValue="value.value" placeholder="Body Value"/>
+                            <context-input v-model:modelValue="value.value" placeholder="Body Value" type="textarea"/>
                         </n-input-group>
                     </div>
                 </template>

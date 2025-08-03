@@ -1,71 +1,117 @@
 <template>
     <div class="flow-layout">
         <!-- 左侧节点面板 -->
-        <n-card title="节点面板" size="small" class="left-panel side-panel">
-            <template v-for="(type, index) in nodeTypeButtons" :key="index">
-                <n-button v-if="nodeTypeRegistry[type].label !== '-'" class="draggable-node" text block
-                    @dragstart="onDragStart($event, type)" draggable="true">
+        <n-card title="节点面板"
+                size="small"
+                class="left-panel side-panel">
+            <template v-for="(type, index) in nodeTypeButtons"
+                      :key="index">
+                <n-button v-if="nodeTypeRegistry[type].label !== '-'"
+                          class="draggable-node"
+                          text
+                          block
+                          @dragstart="onDragStart($event, type)"
+                          draggable="true">
                     <div class="node-text">
                         {{ nodeTypeRegistry[type].label }}
                     </div>
-                    <n-tag v-if="nodeCountOfEachType[type]" size="tiny" class="ml-2">{{ nodeCountOfEachType[type]
+                    <n-tag v-if="nodeCountOfEachType[type]"
+                           size="tiny"
+                           class="ml-2">{{ nodeCountOfEachType[type]
                         }}</n-tag>
                 </n-button>
                 <n-divider v-else />
             </template>
         </n-card>
-        <n-split direction="horizontal" :max="0.85" :min="0.15" :default-size="0.65">
+        <n-split direction="horizontal"
+                 :max="0.85"
+                 :min="0.15"
+                 :default-size="0.65">
             <template #1> <!-- 中间流程画布 -->
-                <n-tabs v-model:value="activeTab" type="segment" class="canvas-panel h-full" pane-class="h-full">
-                    <n-tab-pane name="canvas" tab="流程画布" style="padding: 0px;">
-                        <VueFlow ref="vueFlowRef" v-model:nodes="nodes" v-model:edges="edges"
-                            :connection-mode="ConnectionMode.Strict" :pan-on-drag="true" :node-types="nodeTypesMap"
-                            :edge-types="{
-                                'default': markRaw(CustomBaseEdge)
-                            }" :default-edge-options="{
-                                type: 'default',
-                                markerEnd: 'arrowclosed',
-                            }" @drop="onDrop" @dragover="onDragOver" @node-click="onNodeClick"
-                            @nodes-change="onNodesChange" @edges-change="onEdgesChange" @connect="onConnect"
-                            @viewport-change="onViewportChange" :is-valid-connection="validateConnection">
+                <n-tabs v-model:value="activeTab"
+                        type="segment"
+                        class="canvas-panel h-full"
+                        pane-class="h-full">
+                    <n-tab-pane name="canvas"
+                                tab="流程画布"
+                                style="padding: 0px;">
+                        <VueFlow ref="vueFlowRef"
+                                 v-model:nodes="nodes"
+                                 v-model:edges="edges"
+                                 :connection-mode="ConnectionMode.Strict"
+                                 :pan-on-drag="true"
+                                 :node-types="nodeTypesMap"
+                                 :edge-types="{
+                                    'default': markRaw(CustomBaseEdge)
+                                }"
+                                 :default-edge-options="{
+                                    type: 'default',
+                                    markerEnd: 'arrowclosed',
+                                }"
+                                 @drop="onDrop"
+                                 @dragover="onDragOver"
+                                 @node-click="onNodeClick"
+                                 @nodes-change="onNodesChange"
+                                 @edges-change="onEdgesChange"
+                                 @connect="onConnect"
+                                 @viewport-change="onViewportChange"
+                                 :is-valid-connection="validateConnection">
                             <MiniMap />
                             <Controls position="top-left">
-                                <ControlButton title="Reset Transform" @click="resetTransform">
+                                <ControlButton title="Reset Transform"
+                                               @click="resetTransform">
                                     <Icon name="reset" />
                                 </ControlButton>
-                                <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
-                                    <Icon v-if="dark" name="sun" />
-                                    <Icon v-else name="moon" />
+                                <ControlButton title="Toggle Dark Mode"
+                                               @click="toggleDarkMode">
+                                    <Icon v-if="dark"
+                                          name="sun" />
+                                    <Icon v-else
+                                          name="moon" />
                                 </ControlButton>
-                                <ControlButton title="Log `toObject`" @click="logToObject">
+                                <ControlButton title="Log `toObject`"
+                                               @click="logToObject">
                                     <Icon name="log" />
                                 </ControlButton>
                             </Controls>
                         </VueFlow>
                     </n-tab-pane>
-                    <n-tab-pane name="globals" tab="全局配置" class="overflow-hidden">
-                        <FlowGlobalsEditor v-model:inputs="flowInputs" v-model:variables="flowVariables" />
+                    <n-tab-pane name="globals"
+                                tab="全局配置"
+                                class="overflow-hidden">
+                        <FlowGlobalsEditor v-model:inputs="flowInputs"
+                                           v-model:variables="flowVariables" />
                     </n-tab-pane>
                 </n-tabs>
             </template>
             <template #2><!-- 右侧属性编辑器 -->
-                <n-card title="属性编辑" size="small" class="right-panel"
-                    v-if="activeTab === 'canvas' && showPropertyPanel">
+                <n-card title="属性编辑"
+                        size="small"
+                        class="right-panel"
+                        v-if="activeTab === 'canvas' && showPropertyPanel">
                     <template #header-extra>
-                        <n-button quaternary circle size="tiny" @click="showPropertyPanel = false">✕</n-button>
+                        <n-button quaternary
+                                  circle
+                                  size="tiny"
+                                  @click="showPropertyPanel = false">✕</n-button>
                     </template>
                     <template #default>
                         <!-- Scrollable area for NodeConfigPanel with a max height -->
                         <div style="height: calc(100vh - 120px);">
                             <NodeConfigPanel :selected-node="selectedNode"
-                                @update:config="(data) => handleDataUpdate(data, 'update:node-config')" />
+                                             @update:config="(data) => handleDataUpdate(data, 'update:node-config')" />
                         </div>
                     </template>
                 </n-card>
-                <n-card title="属性编辑" size="small" class="right-panel"
-                    v-else-if="activeTab === 'globals' && showPropertyPanel">
+                <n-card title="属性编辑"
+                        size="small"
+                        class="right-panel"
+                        v-else-if="activeTab === 'globals' && showPropertyPanel">
                     <template #header-extra>
-                        <n-button quaternary circle size="tiny" @click="showPropertyPanel = false">✕</n-button>
+                        <n-button quaternary
+                                  circle
+                                  size="tiny"
+                                  @click="showPropertyPanel = false">✕</n-button>
                     </template>
                     <template #default>
                         <!-- Scrollable area for NodeConfigPanel with a max height -->
@@ -77,20 +123,31 @@
             </template>
         </n-split>
     </div>
-    <n-modal v-model:show="showYamlModal" preset="card" title="流程 JSON" style="width: 100vw; height: 100vh;"
-        :content-style="{ height: '100%', overflow: 'auto' }">
+    <n-modal v-model:show="showYamlModal"
+             preset="card"
+             title="流程 JSON"
+             style="width: 100vw; height: 100vh;"
+             :content-style="{ height: '100%', overflow: 'auto' }">
         <FlowYAMLViewer :config="flowStore.generateFlowConfigPayload().config"
-            @update:flow-config="(data) => handleDataUpdate(data, 'update:flow-config')" />
+                        @update:flow-config="(data) => handleDataUpdate(data, 'update:flow-config')" />
     </n-modal>
-    <n-modal v-model:show="showRunnerModal" preset="card" title="流程测试" style="width: 100vw; height: 100vh;"
-        :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
-        <FlowRunner :flow-id="Array.isArray(route.params.id) ? route.params.id[0] : route.params.id" :test-mode="true"
-            @update:flow-schema="(data) => handleDataUpdate(data, 'update:flow-schema')" />
+    <n-modal v-model:show="showRunnerModal"
+             preset="card"
+             title="流程测试"
+             style="width: 100vw; height: 100vh;"
+             :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
+        <FlowRunner :flow-id="Array.isArray(route.params.id) ? route.params.id[0] : route.params.id"
+                    :test-mode="true"
+                    @update:flow-schema="(data) => handleDataUpdate(data, 'update:flow-schema')" />
     </n-modal>
-    <n-modal v-model:show="showNodeTestDialog" preset="card" title="测试运行" style="width: 100vw; height: 100vh;"
-        :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
-        <NodeTestDialog v-if="testNodeData" :current-test-node="testNodeData"
-            @update:node-schema="(data) => handleDataUpdate(data, 'update:node-schema')" />
+    <n-modal v-model:show="showNodeTestDialog"
+             preset="card"
+             title="测试运行"
+             style="width: 100vw; height: 100vh;"
+             :content-style="{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }">
+        <NodeTestDialog v-if="testNodeData"
+                        :current-test-node="testNodeData"
+                        @update:node-schema="(data) => handleDataUpdate(data, 'update:node-schema')" />
     </n-modal>
 </template>
 
@@ -516,6 +573,7 @@ onMounted(async () => {
     testNodeData.value = null
     if (flowId) {
         try {
+            flowStore.resetFlowState()
             const res = await request.get(TenantSpaceAPI.flows.get(flowId))
             const flowEntity = res?.data?.data
             if (flowEntity?.config) {
@@ -597,7 +655,7 @@ onMounted(async () => {
             h(NTag, {
                 type: 'default',
                 size: 'small',
-                onClick: () => console.log(undoStack.value.length, nodes.value, edges.value, useFlowStore().mockContext),
+                onClick: () => console.log(undoStack.value.length, 'Nodes', nodes.value, 'Edges', edges.value, useFlowStore().mockContext),
                 style: ''
             }, { default: () => flowEntity.value.name || '未命名流程' }),
     ])
@@ -747,8 +805,8 @@ function onNodeClick(event: { node: Node }) {
 function validateConnection(connection: Connection): boolean {
     // Only allow sourceHandle starting with 'right' and targetHandle starting with 'left'
     const isValidHandles =
-        !!connection.sourceHandle?.startsWith('right') &&
-        !!connection.targetHandle?.startsWith('left');
+        !!connection.sourceHandle?.startsWith('source') &&
+        !!connection.targetHandle?.startsWith('target');
     if (!isValidHandles) return false;
     return true;
 }
