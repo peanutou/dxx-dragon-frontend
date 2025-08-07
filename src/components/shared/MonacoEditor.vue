@@ -69,7 +69,7 @@ onMounted(() => {
 
 // 响应外部 value 的变化
 watch(() => props.modelValue, (newVal) => {
-    if (editor && newVal && newVal !== editor.getValue()) {
+    if (editor && newVal !== undefined && newVal !== editor.getValue()) {
         editor.setValue(newVal)
     }
 })

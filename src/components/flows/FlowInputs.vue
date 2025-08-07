@@ -105,7 +105,6 @@ import { TenantSpaceAPI } from '@/apis/endpoints'
 import request from '@/utils/axios'
 import MonacoEditor from '@/components/shared/MonacoEditor.vue'
 import { isValidObject, isValidArray } from '@/utils/valid'
-import { error } from 'console'
 
 const props = defineProps<{
     inputs: Array<any>

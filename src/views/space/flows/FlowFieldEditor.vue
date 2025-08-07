@@ -149,9 +149,15 @@
                                     label-width="80px"
                                     class="flex-1"
                                     :span="2"
-                                    :feedback="!isValidObject(input.expression) ? `请输入有效的对象格式，如：${JSON.stringify({ key: 'value' })}` : ''"
-                                    :validation-status="!isValidObject(input.expression) ? 'warning' : 'success'">
-                        <context-input v-model:modelValue="input.expression"
+                                    :feedback="!isValidObject(fieldType === 'variables' ? input.expression : input.default) ? `请输入有效的对象格式，如：${JSON.stringify({ key: 'value' })}` : ''"
+                                    :validation-status="!isValidObject(fieldType === 'variables' ? input.expression : input.default) ? 'warning' : 'success'">
+                        <n-input v-if="fieldType === 'inputs'"
+                                 :default-value="JSON.stringify(input.default, null, 4)"
+                                 :placeholder="placeholder(input.type)"
+                                 v-on:update-value="input.default = isValidArray($event) ? JSON.parse($event) : null"
+                                 class="w-full" />
+                        <context-input v-if="fieldType === 'variables'"
+                                       v-model:modelValue="input.expression"
                                        :placeholder="placeholder(input.type)"
                                        type="textarea"></context-input>
                     </n-form-item-gi>
@@ -162,9 +168,15 @@
                                     label-width="80px"
                                     class="flex-1"
                                     :span="2"
-                                    :feedback="!isValidArray(input.expression) ? '请输入有效的数组格式，如：[1, 2, 3]' : ''"
-                                    :validation-status="!isValidArray(input.expression) ? 'warning' : 'success'">
-                        <context-input v-model:modelValue="input.expression"
+                                    :feedback="!isValidArray(fieldType === 'variables' ? input.expression : input.default) ? '请输入有效的数组格式，如：[1, 2, 3]' : ''"
+                                    :validation-status="!isValidArray(fieldType === 'variables' ? input.expression : input.default) ? 'warning' : 'success'">
+                        <n-input v-if="fieldType === 'inputs'"
+                                 :default-value="JSON.stringify(input.default, null, 4)"
+                                 :placeholder="placeholder(input.type)"
+                                 v-on:update-value="input.default = isValidArray($event) ? JSON.parse($event) : null"
+                                 class="w-full" />
+                        <context-input v-if="fieldType === 'variables'"
+                                       v-model:modelValue="input.expression"
                                        :placeholder="placeholder(input.type)"
                                        type="textarea"></context-input>
                     </n-form-item-gi>
@@ -178,25 +190,12 @@
 import { NInput, NInputNumber, NSelect, NSwitch, NDynamicInput, NGrid, NFormItemGi, NForm } from 'naive-ui'
 import ContextInput from '@/components/shared/ContextInput.vue';
 import { FieldConfig } from '@/store/flow'
-import { toValue, watch } from 'vue';
 import { isValidName, isLabelValid, isValidObject, isValidArray, isValidBoolean, isValidNumber } from '@/utils/valid';
 const props = defineProps<{
     object: Record<string, any>,
     fieldName: string,
     fieldType: 'inputs' | 'variables',
 }>()
-watch(() => props.object, (newVal) => {
-    newVal[props.fieldName] = newVal[props.fieldName] || []
-    newVal[props.fieldName].forEach((input: Record<string, any>) => {
-        if (!input.default) {
-            if (input.type === 'array') {
-                input.default = JSON.stringify(input.default || [])
-            } else if (input.type === 'object') {
-                input.default = JSON.stringify(input.default || {})
-            }
-        }
-    })
-}, { immediate: true, deep: true })
 const flowInputOptions = [
     { label: 'string', value: 'string' },
     { label: 'number', value: 'number' },

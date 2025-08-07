@@ -161,7 +161,7 @@ async function fetchFlow() {
                     } else {
                         inputValues.value[field.name] = null; // 默认值为 null
                     }
-                }   
+                }
             });
         }
         selectedRunId.value = flowDefinition.value.test_inputs_history?.[0]?.run_id || ''

@@ -32,9 +32,11 @@
                         type="segment"
                         class="canvas-panel h-full"
                         pane-class="h-full">
+                    <!-- Need to re-render on viewport change -->
                     <n-tab-pane name="canvas"
                                 tab="流程画布"
-                                style="padding: 0px;">
+                                style="padding: 0px;"
+                                v-on:vue:mounted="vueFlowRef?.setViewport?.(viewport)">
                         <VueFlow ref="vueFlowRef"
                                  v-model:nodes="nodes"
                                  v-model:edges="edges"
@@ -98,8 +100,7 @@
                     <template #default>
                         <!-- Scrollable area for NodeConfigPanel with a max height -->
                         <div style="height: calc(100vh - 120px);">
-                            <NodeConfigPanel :selected-node="selectedNode"
-                                             @update:config="(data) => handleDataUpdate(data, 'update:node-config')" />
+                            <NodeConfigPanel :selected-node="selectedNode" />
                         </div>
                     </template>
                 </n-card>
@@ -249,10 +250,25 @@ const {
     undoStack, redoStack, hasChanges, flowEntity, inputs,
     variables, outputs, nodes, edges, viewport, selectedNode
 } = storeToRefs(flowStore)
-
 // 为了语义清晰，使用 flow* 前缀作为 storeToRefs 的别名
 const flowInputs = inputs
 const flowVariables = variables
+const nodesData = computed(() => {
+    return nodes.value.map(node => {
+        return {
+            style: node.style,
+            data: node.data,
+        }
+    })
+})
+const edgesData = computed(() => {
+    return edges.value.map(edge => {
+        return {
+            data: edge.data,
+        }
+    })
+})
+
 let dragOffset = { x: 0, y: 0 }
 // Track if nodes are being dragged
 const isDraggingNodes = ref(false)
@@ -309,6 +325,19 @@ watch(flowVariables, () => {
     snapshot()
 }, { deep: true })
 
+watch(nodesData, () => {
+    if (isRestoringSnapshot.value || isInitializing.value) {
+        return
+    }
+    snapshot()
+}, { deep: true })
+
+watch(edgesData, () => {
+    if (isRestoringSnapshot.value || isInitializing.value) {
+        return
+    }
+    snapshot()
+}, { deep: true })
 
 const vueFlowRef = ref<InstanceType<typeof VueFlow> | null>(null);
 const navbarStore = useNavbarStore()
@@ -777,7 +806,7 @@ function onConnect(params: {
     }
 
     snapshot()
-    const edgeId = `e${params.source}-${params.sourceHandle}-${params.target}-${params.targetHandle}`
+    const edgeId = `edge-${generateShortId()}`
     const existingEdge = edges.value.find((e) => e.id === edgeId)
     // Edge already exists, no need to add it again
     if (existingEdge) {

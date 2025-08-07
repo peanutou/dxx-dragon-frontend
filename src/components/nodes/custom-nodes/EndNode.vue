@@ -1,6 +1,6 @@
 <template>
     <NodeLayout :node-type="props?.type"
-                :node-name="getNodeCapitalizedType(props?.data?.name || '')"
+                :node-name="props?.data?.name || ''"
                 :selected="props.selected"
                 @run="handleRunClick"
                 :show-run-button="true"
@@ -14,7 +14,6 @@
 import type { NodeProps } from '@vue-flow/core'
 import { computed } from 'vue'
 import { useNode } from '@vue-flow/core'
-import { getNodeCapitalizedType } from './shared-behavior'
 import NodeLayout from '@/components/shared/NodeLayout.vue'
 import { useFlowStore } from '@/store/flow'
 

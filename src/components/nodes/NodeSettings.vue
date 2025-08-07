@@ -65,9 +65,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Node } from '@vue-flow/core'
+import type { Node, GraphEdge, Connection } from '@vue-flow/core'
+import { useVueFlow } from '@vue-flow/core';
+import { updateEdgeAction } from '@vue-flow/core/dist/utils';
 import { useFlowStore } from '@/store/flow';
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import {
     NForm, NFormItem, NCollapse, NCollapseItem, NCheckbox,
     NSpace, NIcon, NInput, NInputGroup, NInputGroupLabel,
@@ -76,6 +78,7 @@ import {
 import { EllipseSharp } from '@vicons/ionicons5'
 import { storeToRefs } from 'pinia';
 import ContextInput from '@/components/shared/ContextInput.vue'
+import { generateShortId } from '@/utils/uid';
 const { nodes, edges } = storeToRefs(useFlowStore())
 const props = defineProps<{
     selectedNode: Node | undefined | null
@@ -87,7 +90,9 @@ const connectedFromEdges = computed(() => {
 const handleModeOptions = [
     { label: 'Default', value: '' },
     { label: 'LEFT-RIGHT', value: 'LEFT-RIGHT' },
-    { label: 'TOP-BOTTOM', value: 'TOP-BOTTOM' }
+    { label: 'LEFT-BOTTOM', value: 'LEFT-BOTTOM' },
+    { label: 'TOP-BOTTOM', value: 'TOP-BOTTOM' },
+    { label: 'TOP-RIGHT', value: 'TOP-RIGHT' },
 ]
 const getNodeById = (id: string) => {
     return nodes.value.find(node => node.id === id)
@@ -110,14 +115,55 @@ const handleCheckboxChange = (edge: any, type: 'success' | 'failed') => {
 }
 const handleSelectChange = (value: string) => {
     if (!props.selectedNode) return
+    // Ensure style object exists
     if (props.selectedNode && !props.selectedNode.style) {
         props.selectedNode.style = {}
     }
-    if (
-        typeof props.selectedNode.style === 'object' &&
-        !Array.isArray(props.selectedNode.style)
-    ) {
+    // Set handlerMode in style
+    if (typeof props.selectedNode.style === 'object' && !Array.isArray(props.selectedNode.style)) {
         (props.selectedNode.style as any).handlerMode = value
+    } else {
+        // If style is not an object, reset it to an empty object
+        props.selectedNode.style = { handlerMode: value }
+    }
+    // Find edges where source or target === selectedNode.id
+    const connectedEdges = edges.value.filter(edge => edge.source === selectedNodeId.value || edge.target === selectedNodeId.value)
+    // Update each edge's style
+    const changedValue = value || 'TOP-BOTTOM';
+    if (changedValue === 'LEFT-RIGHT') {
+        connectedEdges.forEach(edge => {
+            if (selectedNodeId.value === edge.source) {
+                edge.sourceHandle = edge.sourceHandle?.replace('bottom', 'right')
+            } else if (selectedNodeId.value === edge.target) {
+                edge.targetHandle = edge.targetHandle?.replace('top', 'left')
+            }
+        })
+    } else if (changedValue === 'LEFT-BOTTOM') {
+        connectedEdges.forEach(edge => {
+            if (selectedNodeId.value === edge.source) {
+                edge.sourceHandle = edge.sourceHandle?.replace('right', 'bottom')
+            } else if (selectedNodeId.value === edge.target) {
+                edge.targetHandle = edge.targetHandle?.replace('top', 'left')
+            }
+        })
+    } else if (changedValue === 'TOP-BOTTOM' || value === '') {
+        connectedEdges.forEach(edge => {
+            if (selectedNodeId.value === edge.source) {
+                edge.sourceHandle = edge.sourceHandle?.replace('right', 'bottom')
+            } else if (selectedNodeId.value === edge.target) {
+                edge.targetHandle = edge.targetHandle?.replace('left', 'top')
+            }
+        })
+    } else if (changedValue === 'TOP-RIGHT') {
+        connectedEdges.forEach(edge => {
+            if (selectedNodeId.value === edge.source) {
+                edge.sourceHandle = edge.sourceHandle?.replace('bottom', 'right')
+            } else if (selectedNodeId.value === edge.target) {
+                edge.targetHandle = edge.targetHandle?.replace('left', 'top')
+            }
+        })
+    } else {
+        console.log(`Mode ${value} not supported yet.`)
     }
 }
 </script>
