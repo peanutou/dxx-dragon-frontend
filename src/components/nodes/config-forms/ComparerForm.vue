@@ -234,7 +234,7 @@
 
         <!-- Rules Editor -->
         <n-form-item v-if="node.rules_method === 'guid'"
-                     label="Group Rules">
+                     label="对比规则">
             <n-dynamic-input v-model:value="node.rules"
                              item-style="margin-bottom: 8px;"
                              :on-create="() => ({
@@ -242,6 +242,36 @@
                                 expression: '',
                             })"
                              show-sort-button>
+                <template #action="{ index, create, remove, move }">
+                    <n-space style="margin-left: 12px; flex-wrap: nowrap; gap: 4px;">
+                        <n-button size="tiny"
+                                  disabled
+                                  @click="() => create(index)">
+                            <n-icon>
+                                <AddIcon />
+                            </n-icon>
+                        </n-button>
+                        <n-button size="tiny"
+                                  disabled
+                                  @click="() => remove(index)">
+                            <n-icon>
+                                <RemoveIcon />
+                            </n-icon>
+                        </n-button>
+                        <n-button size="tiny"
+                                  @click="() => move('up', index)">
+                            <n-icon>
+                                <UpIcon />
+                            </n-icon>
+                        </n-button>
+                        <n-button size="tiny"
+                                  @click="() => move('down', index)">
+                            <n-icon>
+                                <DownIcon />
+                            </n-icon>
+                        </n-button>
+                    </n-space>
+                </template>
                 <template #default="{ value: rule, index }">
                     <n-space vertical
                              class="w-full border-b pb-2 border-b-1 border-b-gray-300">
@@ -419,6 +449,12 @@ import { useFlowStore } from '@/store/flow'
 import DataInput from '@/components/shared/DataInput.vue';
 import ExpressionBuilder from '@/components/expression-builder/ExpressionBuilder.vue'
 import { InformationCircle } from '@vicons/ionicons5'
+import {
+    BagAddOutline as AddIcon,
+    ChevronDownCircleOutline as DownIcon,
+    BagRemoveOutline as RemoveIcon,
+    ChevronUpCircleOutline as UpIcon
+} from '@vicons/ionicons5'
 
 // Comparison mode mirror of backend enum
 enum ComparisonMode {

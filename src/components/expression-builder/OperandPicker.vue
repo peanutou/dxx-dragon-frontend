@@ -2,38 +2,62 @@
     <div class="operand-picker">
         <n-tooltip trigger="hover">
             <template #trigger>
-                <n-icon size="16" class="picker-icon">
+                <n-icon size="16"
+                        class="picker-icon">
                     <HelpCircleOutline />
                 </n-icon>
             </template>
             {{ label }}
         </n-tooltip>
-        <div class="flex flex-row gap-2 flex-1">
-            <n-popselect v-model:value="selectedType" :options="typeOptions" @update-value="onPopSelect">
-                <n-button size="tiny" class="source-select">
+        <div class="operand-picker-content">
+            <n-popselect v-model:value="selectedType"
+                         :options="typeOptions"
+                         @update-value="onPopSelect">
+                <n-button size="tiny"
+                          class="source-select">
                     <template #icon>
                         <component :is="currentIcon" />
                     </template>
                 </n-button>
             </n-popselect>
-            <div class="flex-1">
-                <n-input v-if="selectedType === 'value'" v-model:value="inputValue" placeholder="Enter value"
-                    size="tiny" class="value-input" />
+            <div class="operand-picker-input">
+                <n-input v-if="selectedType === 'value'"
+                         v-model:value="inputValue"
+                         placeholder="Enter value"
+                         size="tiny"
+                         class="value-input" />
 
-                <n-select v-if="selectedType === 'column'" v-model:value="inputValue" size="tiny"
-                    :options="props.columnKeys.map(name => ({ label: name, value: name }))" placeholder="Select column"
-                    class="value-input" />
+                <n-select v-if="selectedType === 'column'"
+                          v-model:value="inputValue"
+                          size="tiny"
+                          :options="props.columnKeys.map(name => ({ label: name, value: name }))"
+                          placeholder="Select column"
+                          class="value-input" />
 
-                <n-select v-if="selectedType === 'variable'" v-model:value="inputValue" size="tiny"
-                    :options="props.variableNames.map(name => ({ label: name, value: name }))"
-                    placeholder="Select variable" class="value-input" />
+                <n-select v-if="selectedType === 'variable'"
+                          v-model:value="inputValue"
+                          size="tiny"
+                          :options="props.variableNames.map(name => ({ label: name, value: name }))"
+                          placeholder="Select variable"
+                          class="value-input" />
 
-                <div v-else-if="selectedType === 'function'" class="function-config">
-                    <n-select v-model:value="functionName" :options="functionOptions" size="tiny" class="value-input" />
-                    <OperandPicker v-for="(arg, i) in functionArgs" :key="arg.id || i" v-model="functionArgs[i]"
-                        :column-keys="props.columnKeys" :variable-names="props.variableNames"
-                        :label="`${arg.label}: ${arg.description}` || `Arg ${i + 1}`" source="value" />
-                    <n-button v-if="isExpandableFunction" @click="addArg" size="tiny" class="value-input">+
+                <div v-else-if="selectedType === 'function'"
+                     class="function-config">
+                    <n-select v-model:value="functionName"
+                              :options="functionOptions"
+                              size="tiny"
+                              class="value-input" />
+                    <OperandPicker v-for="(arg, i) in functionArgs"
+                                   :key="arg.id || i"
+                                   v-model="functionArgs[i]"
+                                   :column-keys="props.columnKeys"
+                                   :variable-names="props.variableNames"
+                                   :label="`${arg.label}: ${arg.description}` || `Arg ${i + 1}`"
+                                   source="value" />
+                    <n-button v-if="isExpandableFunction"
+                              @click="addArg"
+                              size="tiny"
+                              class="value-input">+
                         Arg</n-button>
                 </div>
             </div>
@@ -114,7 +138,6 @@ const typeOptions = computed(() => {
     options.push({ label: 'Function', value: 'function' })
     return options
 })
-
 const typeIconMap = {
     value: DocumentTextOutline,
     variable: CubeOutline,
@@ -167,6 +190,17 @@ function onPopSelect(val: string | undefined) {
     align-items: top;
     --line-height: 30px;
     --line-margin-bottom: 5px;
+}
+
+.operand-picker-content {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    flex: 1;
+}
+
+.operand-picker-input {
+    flex: 1;
 }
 
 .picker-icon {

@@ -1,8 +1,14 @@
 <template>
     <div>
-        <OperandPicker v-model="expr.left" :keys="targetKeys" source="target" label="Target Field" />
+        <OperandPicker v-model="expr.left"
+                       :keys="targetKeys"
+                       source="target"
+                       label="Target Field" />
         <OperatorPicker v-model="expr.operator" />
-        <OperandPicker v-model="expr.right" :keys="inputKeys" source="input" label="Input Field" />
+        <OperandPicker v-model="expr.right"
+                       :keys="inputKeys"
+                       source="input"
+                       label="Input Field" />
     </div>
 </template>
 

@@ -1,7 +1,10 @@
 <template>
     <div class="expression-builder">
-        <ExpressionNode :parent="null" v-model="expressionTree" :column-keys="columnKeys"
-            :variable-names="variableNames" @update:expression="handleExpressionUpdate" />
+        <ExpressionNode :parent="null"
+                        v-model="expressionTree"
+                        :column-keys="columnKeys"
+                        :variable-names="variableNames"
+                        @update:expression="handleExpressionUpdate" />
     </div>
 </template>
 
