@@ -1,6 +1,13 @@
 <template>
-    <n-tree-select v-model:value="modelValue" :options="treeOptions" :show-path="true" :multiple="false"
-        :show-checkbox="false" :show-icon="true" :filterable="true" :on-load="handleLoadMore" placeholder="请选择输入数据" />
+    <n-tree-select v-model:value="modelValue"
+                   :options="treeOptions"
+                   :show-path="true"
+                   :multiple="false"
+                   :show-checkbox="false"
+                   :show-icon="true"
+                   :filterable="true"
+                   :on-load="handleLoadMore"
+                   placeholder="请选择输入数据" />
 </template>
 
 <script setup lang="ts">
@@ -9,7 +16,6 @@ import { Ref, ref, h, VNode, onMounted } from 'vue';
 import { useFlowStore } from '@/store/flow';
 import type { FieldConfig } from '@/store/flow';
 import { Node } from '@vue-flow/core'
-import { get } from 'http';
 
 const modelValue = defineModel<string>()
 const flowStore = useFlowStore()
@@ -104,7 +110,7 @@ function getChildrenOptions(option: TreeSelectOption): TreeSelectOption[] {
     else if (option.category === 'o') {
         if (!flowStore.nodes || !Array.isArray(flowStore.nodes)) return [];
         flowStore.nodes.forEach((node: Node) => {
-            if (node.parentNode) return; // Skip child nodes
+            // if (node.parentNode) return; // Skip child nodes
             const schemaType = getSchemaType(node.data.outputs);
             children.push({
                 label: node.data.name,

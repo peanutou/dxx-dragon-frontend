@@ -16,6 +16,10 @@
                     <n-divider title-placement="center" style="margin-top: 0px; font-size: 12px;">上下文：全局输入</n-divider>
                     <FlowInputs :inputs="inputs || []" v-model:input-values="mockContext.inputs" />
 
+                    <!-- 模拟输入当前变量字段 -->
+                    <n-divider title-placement="center" style="margin-top: 0px; font-size: 12px;">上下文：模拟变量输入</n-divider>
+                    <FlowInputs :inputs="variables || []" v-model:input-values="mockContext.variables" />
+
                     <!-- 保留原始 mock_upstream 输入区域 -->
                     <n-divider title-placement="center" style="margin-top: 0px; font-size: 12px;">上下文：节点输出</n-divider>
                     <div style="flex: 1 0 0; overflow-y: auto;">
@@ -68,7 +72,7 @@ const props = defineProps<{
     currentTestNode: NodeProps
 }>()
 const emit = defineEmits(['update:node-schema'])
-const { mockContext, nodes, inputs } = useFlowStore()
+const { mockContext, nodes, inputs, variables } = useFlowStore()
 const route = useRoute()
 const loading = ref(false)
 const nodeName = computed(() => props?.currentTestNode?.data.name)
@@ -103,6 +107,7 @@ async function handleRun() {
                 node_id: props.currentTestNode.id,
                 inputs: {
                     "mock_flow_inputs": mockContext.inputs,
+                    "mock_variable": mockContext.variables,
                     "mock_upstream": mockContext.outputs,
                 }
             }

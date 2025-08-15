@@ -162,7 +162,7 @@ import { NButton, NTag, NCard, NSplit, NTabs, NTabPane } from 'naive-ui'
 import { ref, computed, onMounted, markRaw, h, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 // VueFlow 相关
-import { VueFlow, ConnectionMode, Node } from '@vue-flow/core'
+import { VueFlow, ConnectionMode, Node, type Edge } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import Icon from './FlowEditorIcon.vue'
@@ -342,6 +342,103 @@ watch(edgesData, () => {
 const vueFlowRef = ref<InstanceType<typeof VueFlow> | null>(null);
 const navbarStore = useNavbarStore()
 const activeTab = ref('canvas')
+const clipboard = ref<{ nodes: Node[]; edges: Edge[] } | null>(null)
+
+function isTypingTarget(el: EventTarget | null) {
+    const t = el as HTMLElement | null
+    if (!t) return false
+    const tag = t.tagName
+    return tag === 'INPUT' || tag === 'TEXTAREA' || (t as HTMLElement).isContentEditable
+}
+
+function copySelection() {
+    // Selected nodes in Vue Flow have `selected` true
+    const selected = nodes.value.filter((n: any) => n.selected)
+    if (selected.length === 0) {
+        window.$message?.info?.('未选择节点，无法复制')
+        return
+    }
+    const selectedIds = new Set(selected.map(n => n.id))
+    // Copy edges only if both ends are selected
+    const connectingEdges = edges.value.filter(e => selectedIds.has(e.source) && selectedIds.has(e.target)) as Edge[]
+    // Deep clone (simple)
+    const clonedNodes = JSON.parse(JSON.stringify(selected)) as Node[]
+    const clonedEdges = JSON.parse(JSON.stringify(connectingEdges)) as Edge[]
+    clipboard.value = { nodes: clonedNodes, edges: clonedEdges }
+    window.$message?.success?.(`已复制 ${clonedNodes.length} 个节点${clonedEdges.length ? `，${clonedEdges.length} 条边` : ''}`)
+}
+
+function pasteSelection() {
+    if (!clipboard.value) {
+        window.$message?.info?.('剪贴板为空')
+        return
+    }
+    const idMap = new Map<string, string>()
+    const pastedNodes: Node[] = clipboard.value.nodes.map((n) => {
+        const newId = `${n.type?.toString().toLowerCase?.() || 'node'}_${generateShortId()}`
+        idMap.set(n.id, newId)
+        return {
+            ...n,
+            id: newId,
+            // offset a bit to make pasted nodes visible
+            position: { x: (n as any).position.x + 30, y: (n as any).position.y + 30 },
+            // keep nesting if any (parentNode / extent) as-is
+            data: {
+                ...(n as any).data,
+                name: ((n as any).data?.name ? ((n as any).data.name + '_copy') : newId)
+            }
+        } as unknown as Node
+    })
+
+    const pastedEdges: Edge[] = clipboard.value.edges.map((e) => {
+        const newId = `edge-${generateShortId()}`
+        const newSource = idMap.get(e.source) || e.source
+        const newTarget = idMap.get(e.target) || e.target
+        return {
+            ...e,
+            id: newId,
+            source: newSource,
+            target: newTarget
+        } as Edge
+    })
+
+    snapshot()
+    nodes.value.push(...pastedNodes)
+    edges.value.push(...pastedEdges)
+    window.$message?.success?.(`已粘贴 ${pastedNodes.length} 个节点${pastedEdges.length ? `，${pastedEdges.length} 条边` : ''}`)
+}
+
+function onGlobalKeydown(e: KeyboardEvent) {
+    // Ignore when typing in inputs/textareas/contenteditable
+    if (isTypingTarget(e.target)) return
+
+    const isMac = navigator.platform.toUpperCase().includes('MAC')
+    const ctrlOrMeta = isMac ? e.metaKey : e.ctrlKey
+    if (!ctrlOrMeta) return
+
+    const key = e.key.toLowerCase()
+    if (key === 'c') {
+        // Copy selected nodes
+        e.preventDefault()
+        copySelection()
+    } else if (key === 'v') {
+        // Paste previously copied nodes
+        e.preventDefault()
+        pasteSelection()
+    } else if (key === 'z') {
+        // Undo
+        e.preventDefault()
+        undo()
+    } else if (key === 'y' || (isMac && key === 'z' && e.shiftKey)) {
+        // Redo (Mac: Shift + Z)
+        e.preventDefault()
+        redo()
+    } else if (key === 'd') {
+        // Duplicate selected nodes
+        e.preventDefault()
+        pasteSelection()
+    }
+}
 
 /*
     NOTE: 快照的时机
@@ -371,7 +468,6 @@ function snapshot() {
 function onViewportChange({ x, y, zoom }: { x: number; y: number; zoom: number }) {
     flowStore.viewport = { x, y, zoom }
 }
-
 
 const needsSnapshot = ref(false)
 
@@ -597,6 +693,7 @@ function redo() {
 }
 
 onMounted(async () => {
+    window.addEventListener('keydown', onGlobalKeydown)
     const flowId = route.params.id as string
     selectedNode.value = null
     testNodeData.value = null
@@ -691,6 +788,7 @@ onMounted(async () => {
 })
 
 onUnmounted(async () => {
+    window.removeEventListener('keydown', onGlobalKeydown)
     flowStore.resetFlowState()
     navbarStore.clearActions()
 })

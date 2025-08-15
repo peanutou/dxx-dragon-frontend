@@ -17,7 +17,7 @@
                 :on-create="() => ({ source: '', target: '' })" show-sort-button>
                 <template #default="{ value }">
                     <div class="flex gap-2 w-full">
-                        <n-input v-model:value="value.source" placeholder="标题位置" />
+                        <context-input v-model:model-value="value.source" placeholder="标题位置" />
                         <n-input v-model:value="value.target" placeholder="目标变量名"
                             :allow-input="val => !/\s/.test(val)" />
                     </div>
