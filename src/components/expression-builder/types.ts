@@ -53,7 +53,7 @@ export const FUNCTION_OPTIONS: FunctionDefinition[] = [
         args: [
             {
                 name: 'text',
-                label: 'Text to convert to lowercase',
+                label: 'String',
                 description: 'The input string to be converted.'
             }
         ],
@@ -82,7 +82,7 @@ export const FUNCTION_OPTIONS: FunctionDefinition[] = [
         args: [
             {
                 name: 'text',
-                label: 'Text to extract from',
+                label: 'Text',
                 description: 'The input string to apply the regex pattern on.'
             },
             {
@@ -99,12 +99,12 @@ export const FUNCTION_OPTIONS: FunctionDefinition[] = [
         args: [
             {
                 name: 'text1',
-                label: 'First Text',
+                label: 'Text',
                 description: 'The first string to compare.'
             },
             {
                 name: 'text2',
-                label: 'Second Text',
+                label: 'Text',
                 description: 'The second string to compare.'
             }
         ],
@@ -116,9 +116,26 @@ export const FUNCTION_OPTIONS: FunctionDefinition[] = [
         args: [
             {
                 name: 'expression',
-                label: 'Boolean Expression or Value',
+                label: 'Boolean or Object',
                 description: 'The expression or value to negate.'
             },
+        ],
+        expandable: false
+    },
+    {
+        label: 'extract_groups',
+        value: 'extract_groups',
+        args: [
+            {
+                name: 'text',
+                label: 'Text',
+                description: 'The text to extract groups from.'
+            },
+            {
+                name: 'pattern',
+                label: 'Regex Pattern',
+                description: 'The regular expression pattern used to extract groups.'
+            }
         ],
         expandable: false
     }

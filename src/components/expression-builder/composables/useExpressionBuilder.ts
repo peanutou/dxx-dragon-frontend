@@ -93,6 +93,7 @@ export function createOperand(source: OperandSource, funcName?: string): Operand
             const fnDef = FUNCTION_OPTIONS.find(f => f.value === fnName)
             const args = fnDef?.args.map(arg => {
                 const operand = createOperand('value')
+                operand.name = arg.name
                 operand.label = arg.label
                 operand.description = arg.description
                 return operand
@@ -163,7 +164,6 @@ export function parseExpression(exprStr: string, isRoot = true): Expression {
                 op,
                 right: parseOperand(rightStr),
             };
-            console.log('Parsed basic expression:', isRoot ? 'composite' : 'basic', basicExpr);
             return isRoot
                 ? {
                     id: generateShortId(),
@@ -174,7 +174,8 @@ export function parseExpression(exprStr: string, isRoot = true): Expression {
                 : basicExpr;
         }
     }
-    throw new Error(`Failed to parse expression: ${exprStr}`);
+    console.warn(`Failed to parse expression: ${exprStr}`);
+    return createDefaultExpression('composite')
 }
 
 function stripParens(s: string): string {
@@ -237,12 +238,19 @@ function parseOperand(str: string): Operand {
         const name = fn[1];
         const args = splitArgs(fn[2]).map(a => parseOperand(a));
         const operand = createOperand('function', name);
+        args.forEach((arg, index) => {
+            arg.label = operand.args?.[index].label;
+            arg.description = operand.args?.[index].description;
+        });
         operand.args = args;
         return operand;
     }
     // String literal
-    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-        const val = JSON.parse(s);
+    if ((s.startsWith('"') && s.endsWith('"')) ||
+        (s.startsWith("'") && s.endsWith("'")) ||
+        (s.startsWith('r"') && s.endsWith('"')) ||
+        (s.startsWith("r'") && s.endsWith("'"))) {
+        const val = s.startsWith('r') ? s: JSON.parse(s);
         const operand = createOperand('value');
         operand.value = val;
         return operand;

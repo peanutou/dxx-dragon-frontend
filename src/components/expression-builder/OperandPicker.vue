@@ -195,12 +195,14 @@ function onPopSelect(val: string | undefined) {
 .operand-picker-content {
     display: flex;
     flex-direction: row;
+    overflow: hidden;
     gap: 8px;
     flex: 1;
 }
 
 .operand-picker-input {
     flex: 1;
+    overflow-x: auto;
 }
 
 .picker-icon {
