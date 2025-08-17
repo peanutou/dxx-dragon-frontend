@@ -471,7 +471,6 @@ function onViewportChange({ x, y, zoom }: { x: number; y: number; zoom: number }
 
 const needsSnapshot = ref(false)
 
-// VueFlow 事件处理
 function onNodesChange(changes: NodeChange[]) {
     const hasRemoval = changes.some(change => change.type === 'remove')
     const hasPositionChange = changes.some(change => change.type === 'position')
@@ -507,7 +506,6 @@ function onNodesChange(changes: NodeChange[]) {
     }
 }
 
-// VueFlow 事件处理
 function onEdgesChange(changes: EdgeChange[]) {
     const hasRemoval = changes.some(change => change.type === 'remove')
     const isEmptyChange = changes.length === 0;

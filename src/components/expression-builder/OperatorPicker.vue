@@ -27,9 +27,9 @@ const operatorOptions = [
     { label: '==', key: 'equal' },
     { label: 'not =', key: 'not equal' },
     { label: '>', key: 'greater' },
-    { label: '> or =', key: 'greater or equal' },
+    { label: '> or =', key: 'greater equal' },
     { label: '<', key: 'less' },
-    { label: '< or =', key: 'less or equal' },
+    { label: '< or =', key: 'less equal' },
 ]
 
 const onSelect = (val) => {

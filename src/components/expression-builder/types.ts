@@ -7,9 +7,9 @@ export type Operator =
     | 'equal'
     | 'not equal'
     | 'greater'
-    | 'greater or equal'
+    | 'greater equal'
     | 'less'
-    | 'less or equal'
+    | 'less equal'
 
 // The source type for an operand
 export type OperandSource = 'value' | 'variable' | 'column' | 'function'
@@ -90,6 +90,35 @@ export const FUNCTION_OPTIONS: FunctionDefinition[] = [
                 label: 'Regex Pattern',
                 description: 'The regular expression pattern used to extract matches.'
             }
+        ],
+        expandable: false
+    },
+    {
+        label: 'similarity',
+        value: 'similarity',
+        args: [
+            {
+                name: 'text1',
+                label: 'First Text',
+                description: 'The first string to compare.'
+            },
+            {
+                name: 'text2',
+                label: 'Second Text',
+                description: 'The second string to compare.'
+            }
+        ],
+        expandable: false
+    },
+    {
+        label: 'not',
+        value: 'not',
+        args: [
+            {
+                name: 'expression',
+                label: 'Boolean Expression or Value',
+                description: 'The expression or value to negate.'
+            },
         ],
         expandable: false
     }

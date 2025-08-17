@@ -144,11 +144,11 @@ export function parseExpression(exprStr: string, isRoot = true): Expression {
         'end with',
         'match',
         'not equal',
-        'equal',
-        'greater or equal',
+        'greater equal',
         'greater',
-        'less or equal',
+        'less equal',
         'less',
+        'equal',
     ] as const;
     for (const op of operators) {
         const opToken = ` ${op} `;

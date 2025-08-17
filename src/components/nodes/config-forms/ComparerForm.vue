@@ -116,8 +116,15 @@
             </n-space>
         </n-form-item>
 
+        <!-- Use Mapping -->
+        <n-form-item label="使用映射">
+            <div class="flex items-center">
+                <n-switch v-model:value="node.use_mapping" />
+            </div>
+        </n-form-item>
+
         <!-- Primary Mapping -->
-        <n-form-item label="数值匹配字段">
+        <n-form-item v-if="node.use_mapping" label="数值匹配字段">
             <template #label>
                 <div class="flex items-center">
                     <span>数值匹配字段</span>
@@ -159,7 +166,7 @@
         </n-form-item>
 
         <!-- Mappings -->
-        <n-form-item label="联动数值">
+        <n-form-item v-if="node.use_mapping" label="联动数值">
             <template #label>
                 <div class="flex items-center">
                     <span>联动数值</span>
@@ -245,14 +252,12 @@
                 <template #action="{ index, create, remove, move }">
                     <n-space style="margin-left: 12px; flex-wrap: nowrap; gap: 4px;">
                         <n-button size="tiny"
-                                  disabled
                                   @click="() => create(index)">
                             <n-icon>
                                 <AddIcon />
                             </n-icon>
                         </n-button>
                         <n-button size="tiny"
-                                  disabled
                                   @click="() => remove(index)">
                             <n-icon>
                                 <RemoveIcon />
@@ -387,8 +392,12 @@
                                         Method
                                     </n-input-group-label>
                                     <n-select v-model:value="rule.method"
-                                              :options="[
+                                              :options="node.use_mapping ? [
                                                 { label: 'Subtract Input', value: 'subtract_input' },
+                                                { label: 'Remove Input', value: 'remove_input' },
+                                                { label: 'Remove All', value: 'remove_all' },
+                                                { label: 'No Action', value: '' }
+                                            ] : [
                                                 { label: 'Remove Input', value: 'remove_input' },
                                                 { label: 'Remove All', value: 'remove_all' },
                                                 { label: 'No Action', value: '' }
@@ -490,6 +499,7 @@ interface ComparerNodeConfig /* extends BaseNodeConfig */ {
         target_field: string
         input_field: string
     }
+    use_mapping: boolean
     mapping_method: 'subtract' | 'remove' | 'remove_all' | ''
     linked_fields: string[]
     use_classifier: boolean
