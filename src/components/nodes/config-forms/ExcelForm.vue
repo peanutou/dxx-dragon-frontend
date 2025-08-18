@@ -27,11 +27,12 @@
                              placeholder="添加文件密码"
                              :on-create="() => ''"
                              show-sort-button>
-                <template #default="{ value }">
+                <template #default="{ value, index }">
                     <n-input-group>
-                        <n-input v-model:value="value.value"
+                        <n-input :value="value"
                                  :type="showPasswords ? 'text' : 'password'"
-                                 placeholder="请输入密码" />
+                                 placeholder="请输入密码"
+                                 @update:value="(val) => node.passwords[index] = val" />
                     </n-input-group>
                 </template>
             </n-dynamic-input>
