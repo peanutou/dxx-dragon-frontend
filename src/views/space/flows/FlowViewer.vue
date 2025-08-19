@@ -15,9 +15,14 @@
                               max-height="calc(100vh - 300px)"
                               virtual-scroll />
                 <template #action>
-                    <n-button class="mt-4"
-                              @click="loadMore"
-                              :loading="loading">加载更多</n-button>
+                    <n-space class="x-gap-2">
+                        <n-button @click="refreshFlowRuns"
+                                  type="primary"
+                                  class="mr-2">刷新</n-button>
+                        <n-button class="mt-4"
+                                  @click="loadMore"
+                                  :loading="loading">加载更多</n-button>
+                    </n-space>
                 </template>
             </n-card>
         </template>
@@ -31,7 +36,7 @@
 
 <script setup lang="ts">
 import { ref, computed, h, onMounted } from 'vue'
-import { NDataTable, NButton, DataTableColumns, DataTableColumn, NCard, NTag, NSplit } from 'naive-ui';
+import { NDataTable, NButton, DataTableColumns, DataTableColumn, NCard, NTag, NSplit, NSpace } from 'naive-ui';
 import request from '@/utils/axios'
 import { useRoute } from 'vue-router';
 import { useFlowStore } from '@/store/flow';
@@ -70,6 +75,12 @@ const loadMore = () => {
     fetchFlowRuns(flowId as string, Math.ceil(flowRuns.value.length / 10) + 1).finally(() => {
         loading.value = false;
     });
+};
+const refreshFlowRuns = () => {
+    flowRuns.value = [];
+    currentFlowRunResult.value = null;
+    selectedRowKeys.value = [];
+    loadMore();
 };
 const columns: DataTableColumns<FlowRunEntity> = [
     {
