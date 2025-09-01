@@ -1,18 +1,29 @@
 <template>
     <n-layout class="h-full">
         <!-- Menu -->
-        <n-layout-header bordered class="pt-1 h-[48px]">
-            <n-menu mode="horizontal" :options="menuOptions" @update:value="handleMenuSelect" />
+        <n-layout-header bordered
+                         class="pt-1 h-[48px]">
+            <n-menu mode="horizontal"
+                    :options="menuOptions"
+                    @update:value="handleMenuSelect" />
         </n-layout-header>
         <!-- JSON View -->
-        <n-layout v-if="currentSelectedView === 'data-view-json'" style="overflow-y: auto; height: calc(100% - 48px);">
-            <vue-json-pretty :data="parsedResult" :deep="2" showLength showIcon theme="dark"
-                @node-click="handleJsonNodeClick" selectableType="single" :highlightSelectedNode="true"
-                v-model:selectedValue="nodeSelectedPath" class="p-4" />
+        <n-layout v-if="currentSelectedView === 'data-view-json'"
+                  style="overflow-y: auto; height: calc(100% - 48px);">
+            <vue-json-pretty :data="parsedResult"
+                             :deep="2"
+                             showLength
+                             showIcon
+                             theme="dark"
+                             @node-click="handleJsonNodeClick"
+                             selectableType="single"
+                             :highlightSelectedNode="true"
+                             v-model:selectedValue="nodeSelectedPath"
+                             class="p-4" />
         </n-layout>
         <!-- Pretty Preview -->
         <n-layout v-else-if="currentSelectedView === 'data-view-preview'"
-            style="overflow-y: auto; height: calc(100% - 48px);">
+                  style="overflow-y: auto; height: calc(100% - 48px);">
             <ViewerContainer :data="nodeResultData" />
         </n-layout>
     </n-layout>
@@ -96,12 +107,12 @@ const menuOptions: MenuOption[] = [
         icon: renderIcon(DiscIcon),
         children: [
             {
-                label: 'JSON 视图',
+                label: 'Context 视图',
                 key: 'data-view-json',
                 icon: renderIcon(DiscIcon),
             },
             {
-                label: 'Preview 视图',
+                label: 'Result 视图',
                 key: 'data-view-preview',
                 icon: renderIcon(DiscIcon),
             },
@@ -120,7 +131,7 @@ function handleMenuSelect(selectedKeys: string | string[]) {
     const selectedKey = keys[0];
 
     if (selectedKey === 'generate-schema') {
-        emit('update:schema', 
+        emit('update:schema',
             schematize(
                 getValueByPath(parsedResult.value, props.resultPath)
             )

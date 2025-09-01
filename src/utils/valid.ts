@@ -29,7 +29,7 @@ export function isValidObject(obj: string): boolean {
     }
 }
 
-export function isValidArray(arr: string): boolean {
+export function isValidArray(arr: string, elemType?: 'string' | 'number' | 'boolean'): boolean {
     if (!arr) return true
     if (hasExpresstionString(arr)) return true // 如果包含表达式字符串，则不验证
     try {
@@ -37,6 +37,7 @@ export function isValidArray(arr: string): boolean {
         if (!Array.isArray(parsed)) return false
         if (parsed.length === 0) return true
         const firstType = typeof parsed[0]
+        if (elemType && firstType !== elemType) return false
         const allSameType = parsed.every(item => typeof item === firstType)
         if (!allSameType) return false
         return true

@@ -28,7 +28,7 @@
         <!-- use_classifier -->
         <n-form-item label="使用分类器">
             <div class="flex items-center">
-                <n-switch v-model:value="node.use_classifier" />
+                <n-switch v-model:value="node.use_classifier" disabled />
             </div>
         </n-form-item>
 
@@ -124,7 +124,8 @@
         </n-form-item>
 
         <!-- Primary Mapping -->
-        <n-form-item v-if="node.use_mapping" label="数值匹配字段">
+        <n-form-item v-if="node.use_mapping"
+                     label="数值匹配字段">
             <template #label>
                 <div class="flex items-center">
                     <span>数值匹配字段</span>
@@ -166,7 +167,8 @@
         </n-form-item>
 
         <!-- Mappings -->
-        <n-form-item v-if="node.use_mapping" label="联动数值">
+        <n-form-item v-if="node.use_mapping"
+                     label="联动数值">
             <template #label>
                 <div class="flex items-center">
                     <span>联动数值</span>
@@ -420,6 +422,20 @@
                                               size="tiny" />
                                 </n-input-group>
                             </n-gi>
+                            <!-- Remove Patterns -->
+                            <n-gi class="input-expression">
+                                <n-input-group class="flex items-center">
+                                    <n-input-group-label size="tiny"
+                                                         class="input-label">
+                                        Remove
+                                    </n-input-group-label>
+                                    <n-input v-model:value="rule.remove_patterns"
+                                             :input-props="{ style: isValidArray(rule.remove_patterns, 'string') ? '' : 'color: red;' }"
+                                             placeholder='e.g. ["pattern1", "pattern2"]，未按照 JSON 格式输入会认为是空'
+                                             size="tiny"
+                                             type="text" />
+                                </n-input-group>
+                            </n-gi>
                         </n-grid>
                     </n-space>
                 </template>
@@ -464,6 +480,7 @@ import {
     BagRemoveOutline as RemoveIcon,
     ChevronUpCircleOutline as UpIcon
 } from '@vicons/ionicons5'
+import { isValidArray } from '@/utils/valid';
 
 // Comparison mode mirror of backend enum
 enum ComparisonMode {

@@ -24,7 +24,18 @@ function operandToString(operand: Operand): string {
                 if (lowered === 'false') return 'False';
                 if (lowered === 'none') return 'None';
                 if (lowered === 'null') return 'None';
-                // Case 4: Treat as string with quotes
+                // Case 4: Try to parse as array
+                if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                    try {
+                        const arr = JSON.parse(trimmed);
+                        if (Array.isArray(arr)) {
+                            return `[${arr.map(item => operandToString({ ...operand, value: item })).join(', ')}]`;
+                        }
+                    } catch (e) {
+                        // Ignore JSON parse errors
+                    }
+                }
+                // Case 5: Treat as string with quotes
                 return JSON.stringify(trimmed);
             }
             if (typeof raw === 'boolean') {
@@ -107,13 +118,42 @@ export function createOperand(source: OperandSource, funcName?: string): Operand
 }
 
 /**
+ * 判断一个字符串是否整体被一对括号 () 包裹
+ * - 自动忽略首尾空格
+ * - 要求括号匹配且最外层只有一对
+ */
+function isWrappedByParentheses(s: string): boolean {
+    if (!s) return false;
+    const trimmed = s.trim();
+    if (!(trimmed.startsWith("(") && trimmed.endsWith(")"))) {
+        return false;
+    }
+
+    let depth = 0;
+    for (let i = 0; i < trimmed.length; i++) {
+        const ch = trimmed[i];
+        if (ch === "(") depth++;
+        else if (ch === ")") {
+            depth--;
+            // 如果提前归零且不是最后一个位置，说明外层不是唯一一对
+            if (depth === 0 && i < trimmed.length - 1) {
+                return false;
+            }
+            if (depth < 0) return false;
+        }
+    }
+
+    return depth === 0;
+}
+
+/**
  * Parse a string representation back into an Expression object.
  */
 export function parseExpression(exprStr: string, isRoot = true): Expression {
     console.log('Parsing expression:', exprStr);
     let trimmed = exprStr.trim();
     // Strip only one layer of outer parentheses so basic expressions like ("12" equal "12") parse correctly
-    if (isRoot && trimmed.startsWith('(') && trimmed.endsWith(')')) {
+    if (isRoot && trimmed.startsWith('(') && trimmed.endsWith(')') && isWrappedByParentheses(trimmed)) {
         trimmed = trimmed.slice(1, -1).trim();
     }
     // Composite: split top-level 'and'
@@ -140,6 +180,7 @@ export function parseExpression(exprStr: string, isRoot = true): Expression {
     }
     // Basic expression: find operator
     const operators = [
+        'not contain',
         'contain',
         'start with',
         'end with',
@@ -205,22 +246,110 @@ function splitTopLevel(s: string, delimiter: string): string[] {
     return parts;
 }
 
-function splitArgs(s: string): string[] {
+/**
+ * 将参数串按顶层逗号分割为参数列表。
+ * 支持：
+ *  - 圆/方/花括号的任意嵌套：() [] {}
+ *  - 字符串：'...'、"..."、`...`（含模板插值 ${ ... } 的嵌套）
+ *  - 忽略字符串内部的逗号与括号
+ * 行为：
+ *  - 仅在“栈为空”（即不在任何括号或模板插值内、且不在字符串内）时才对逗号进行分割
+ *  - 返回的每个片段会 trim，空片段会被过滤
+ */
+export function splitArgs(s: string): string[] {
     const parts: string[] = [];
-    let depth = 0;
+    const stack: string[] = []; // 存括号或模板占位符标记：'(', '[', '{', '${'
     let start = 0;
+
+    // 字符串状态
+    let inString: '"' | "'" | '`' | null = null;
+    let escaped = false;
+
+    const pushPart = (endIdx: number) => {
+        const piece = s.slice(start, endIdx).trim();
+        if (piece) parts.push(piece);
+        start = endIdx + 1; // 跳过逗号
+    };
+
     for (let i = 0; i < s.length; i++) {
         const ch = s[i];
-        const chNext = s[i + 1];
-        if (ch === '(') depth++;
-        else if (ch === ')') depth--;
-        else if (ch === ',' && chNext === ' ' && depth === 0) {
-            parts.push(s.slice(start, i));
-            start = i + 1;
+
+        // --- 在字符串内部 ---
+        if (inString) {
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (ch === '\\') {
+                escaped = true;
+                continue;
+            }
+
+            if (inString === '`') {
+                // 处理模板插值开始：${ ... }
+                if (ch === '$' && s[i + 1] === '{') {
+                    stack.push('${');
+                    i++; // 消费 '{'
+                    continue;
+                }
+                // 处理模板插值结束：... }
+                if (ch === '}' && stack[stack.length - 1] === '${') {
+                    stack.pop();
+                    continue;
+                }
+            }
+
+            // 字符串结束
+            if (
+                (inString === '"' && ch === '"') ||
+                (inString === "'" && ch === "'") ||
+                (inString === '`' && ch === '`')
+            ) {
+                inString = null;
+            }
+            continue;
+        }
+
+        // --- 不在字符串内时 ---
+        // 进入字符串
+        if (ch === '"' || ch === "'" || ch === '`') {
+            inString = ch as unknown as typeof inString;
+            escaped = false;
+            continue;
+        }
+
+        // 处理括号入栈
+        if (ch === '(' || ch === '[' || ch === '{') {
+            stack.push(ch);
+            continue;
+        }
+
+        // 处理括号出栈
+        if (ch === ')' || ch === ']' || ch === '}') {
+            const top = stack[stack.length - 1];
+            if (
+                (ch === ')' && top === '(') ||
+                (ch === ']' && top === '[') ||
+                (ch === '}' && top === '{')
+            ) {
+                stack.pop();
+            } else {
+                // 不匹配：保留原字符，但不改变栈（宽松处理）
+            }
+            continue;
+        }
+
+        // 顶层逗号分割（不再强制要求后面有空格）
+        if (ch === ',' && stack.length === 0) {
+            pushPart(i);
         }
     }
-    parts.push(s.slice(start));
-    return parts.map(p => p.trim()).filter(Boolean);
+
+    // 收尾
+    const tail = s.slice(start).trim();
+    if (tail) parts.push(tail);
+
+    return parts;
 }
 
 function parseOperand(str: string): Operand {
@@ -238,6 +367,7 @@ function parseOperand(str: string): Operand {
         const name = fn[1];
         const args = splitArgs(fn[2]).map(a => parseOperand(a));
         const operand = createOperand('function', name);
+        console.log('Parsed function:', name, args);
         args.forEach((arg, index) => {
             arg.label = operand.args?.[index].label;
             arg.description = operand.args?.[index].description;
@@ -250,9 +380,8 @@ function parseOperand(str: string): Operand {
         (s.startsWith("'") && s.endsWith("'")) ||
         (s.startsWith('r"') && s.endsWith('"')) ||
         (s.startsWith("r'") && s.endsWith("'"))) {
-        const val = s.startsWith('r') ? s: JSON.parse(s);
         const operand = createOperand('value');
-        operand.value = val;
+        operand.value = s;
         return operand;
     }
     // Number literal
@@ -261,6 +390,25 @@ function parseOperand(str: string): Operand {
         const operand = createOperand('value');
         operand.value = JSON.stringify(num);
         return operand;
+    }
+    // Boolean literal
+    if (s.toLowerCase() === 'true' || s.toLowerCase() === 'false') {
+        const operand = createOperand('value');
+        operand.value = s;
+        return operand;
+    }
+    // Array literal
+    if (s.startsWith('[') && s.endsWith(']')) {
+        try {
+            const arr = JSON.parse(s);
+            if (Array.isArray(arr)) {
+                const operand = createOperand('value');
+                operand.value = s;
+                return operand;
+            }
+        } catch (e) {
+            // Ignore JSON parse errors
+        }
     }
     // Variable name
     const operand = createOperand('variable');

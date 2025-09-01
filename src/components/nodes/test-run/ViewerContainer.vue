@@ -1,15 +1,22 @@
 <template>
     <div class="p-4">
         <!-- 面包屑导航 -->
-        <div style="margin-bottom: 12px;" class="flex items-center gap-2">
-            <template v-for="(segment, index) in path" :key="index">
-                <n-popselect :options="getAvailableKeys(index).map(k => ({ label: k, value: k }))" :value="path[index]"
-                    @update:value="val => onSelectSegment(index, val)" size="small">
-                    <n-tag type="info" style="cursor: pointer;">{{ segment }}</n-tag>
+        <div style="margin-bottom: 12px;"
+             class="flex items-center gap-2">
+            <template v-for="(segment, index) in path"
+                      :key="index">
+                <n-popselect :options="getAvailableKeys(index).map(k => ({ label: k, value: k }))"
+                             :value="path[index]"
+                             @update:value="val => onSelectSegment(index, val)"
+                             size="small">
+                    <n-tag type="info"
+                           style="cursor: pointer;">{{ segment }}</n-tag>
                 </n-popselect>
             </template>
-            <n-button size="tiny" @click="decrementPath">-</n-button>
-            <n-button size="tiny" @click="incrementPath">+</n-button>
+            <n-button size="tiny"
+                      @click="decrementPath">-</n-button>
+            <n-button size="tiny"
+                      @click="incrementPath">+</n-button>
         </div>
         <div v-if="path[path.length - 1] === '__MAP__'">
             <MapViewer :data="currentData" />
@@ -18,7 +25,14 @@
             <DataTableViewer :data="currentData" />
         </div>
         <div v-else>
-            <pre>{{ JSON.stringify(currentData, null, 2) }}</pre>
+            <vue-json-pretty :data="currentData"
+                             :deep="2"
+                             showLength
+                             showIcon
+                             theme="dark"
+                             selectableType="single"
+                             :highlightSelectedNode="true"
+                             class="p-0" />
         </div>
     </div>
 </template>
@@ -28,6 +42,7 @@ import { ref, computed, watch } from 'vue'
 import { NTag, NSelect, NButton, NPopselect } from 'naive-ui'
 import MapViewer from './MapViewer.vue';
 import DataTableViewer from './DataTableViewer.vue';
+import VueJsonPretty from 'vue-json-pretty'
 
 const props = defineProps<{
     data: any

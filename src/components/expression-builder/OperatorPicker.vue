@@ -21,6 +21,7 @@ const emit = defineEmits(['update:modelValue'])
 
 const operatorOptions = [
     { label: 'contain', key: 'contain' },
+    { label: 'not contain', key: 'not contain' },
     { label: 'start with', key: 'start with' },
     { label: 'end with', key: 'end with' },
     { label: 'match', key: 'match' },

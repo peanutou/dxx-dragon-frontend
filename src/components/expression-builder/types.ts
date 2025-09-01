@@ -1,6 +1,7 @@
 // The comparison operators supported in expressions
 export type Operator =
     | 'contain'
+    | 'not contain'
     | 'start with'
     | 'end with'
     | 'match'
@@ -94,6 +95,28 @@ export const FUNCTION_OPTIONS: FunctionDefinition[] = [
         expandable: false
     },
     {
+        label: 'replace',
+        value: 'replace',
+        args: [
+            {
+                name: 'text',
+                label: 'Text',
+                description: 'The input string to apply the replacement on.'
+            },
+            {
+                name: 'pattern',
+                label: 'Regex Pattern',
+                description: 'The regular expression pattern used to find matches.'
+            },
+            {
+                name: 'replacement',
+                label: 'Replacement',
+                description: 'The string to replace the matches with.'
+            }
+        ],
+        expandable: false
+    },
+    {
         label: 'similarity',
         value: 'similarity',
         args: [
@@ -111,18 +134,6 @@ export const FUNCTION_OPTIONS: FunctionDefinition[] = [
         expandable: false
     },
     {
-        label: 'not',
-        value: 'not',
-        args: [
-            {
-                name: 'expression',
-                label: 'Boolean or Object',
-                description: 'The expression or value to negate.'
-            },
-        ],
-        expandable: false
-    },
-    {
         label: 'extract_groups',
         value: 'extract_groups',
         args: [
@@ -135,6 +146,23 @@ export const FUNCTION_OPTIONS: FunctionDefinition[] = [
                 name: 'pattern',
                 label: 'Regex Pattern',
                 description: 'The regular expression pattern used to extract groups.'
+            }
+        ],
+        expandable: false
+    },
+    {
+        label: 'pick_at_indices',
+        value: 'pick_at_indices',
+        args: [
+            {
+                name: 'array',
+                label: 'Array',
+                description: 'The array to pick an item from.'
+            },
+            {
+                name: 'indices',
+                label: 'Indices',
+                description: 'The indices of the items to pick from the array.'
             }
         ],
         expandable: false
