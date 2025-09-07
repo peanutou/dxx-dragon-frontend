@@ -392,7 +392,8 @@ function parseOperand(str: string): Operand {
         return operand;
     }
     // Boolean literal
-    if (s.toLowerCase() === 'true' || s.toLowerCase() === 'false') {
+    if (s.toLowerCase() === 'true' || s.toLowerCase() === 'false' ||
+        s.toLowerCase() === 'none' || s.toLowerCase() === 'null') {
         const operand = createOperand('value');
         operand.value = s;
         return operand;
