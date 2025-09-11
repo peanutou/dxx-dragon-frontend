@@ -922,6 +922,7 @@ function onConnect(params: {
 }
 
 function onNodeClick(event: { node: Node }) {
+    console.log('Node clicked:', event.node)
     selectedNode.value = event.node
     showPropertyPanel.value = true
 }

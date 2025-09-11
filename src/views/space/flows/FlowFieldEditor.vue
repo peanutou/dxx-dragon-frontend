@@ -252,7 +252,14 @@ function handleTypeChange(input: FieldConfig) {
         input.items = createEmptyInput()
         input.items.name = '__array_item__'
         input.properties = null
-    } else {
+    }
+    else if (input.type === 'boolean') {
+        input.default = false
+        input.expression = ''
+        input.properties = null
+        input.items = null
+    }
+    else {
         input.properties = null
         input.items = null
     }

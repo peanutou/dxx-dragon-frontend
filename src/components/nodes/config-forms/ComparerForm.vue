@@ -28,9 +28,12 @@
         <!-- use_classifier -->
         <n-form-item label="使用分类器">
             <div class="flex items-center">
-                <n-switch v-model:value="node.use_classifier" disabled />
+                <n-switch v-model:value="node.use_classifier"
+                          disabled />
             </div>
         </n-form-item>
+
+
 
         <!-- classifier -->
         <n-form-item v-if="node.use_classifier"
@@ -114,6 +117,37 @@
                               placeholder="选择输入字段" />
                 </n-input-group>
             </n-space>
+        </n-form-item>
+
+        <!-- Use Grouping -->
+        <n-form-item label="使用分组">
+            <div class="flex items-center">
+                <n-switch v-model:value="node.use_grouping" />
+            </div>
+        </n-form-item>
+
+        <!-- Target Grouping -->
+        <n-form-item v-if="node.use_grouping"
+                     label="目标分组字段">
+            <n-select v-model:value="node.target_grouping"
+                      :options="getTableKeys(node.target_table, false).map(key => ({
+                        label: key,
+                        value: key,
+                    }))"
+                      multiple
+                      placeholder="选择目标分组字段" />
+        </n-form-item>
+
+        <!-- Input Grouping -->
+        <n-form-item v-if="node.use_grouping"
+                     label="输入分组字段">
+            <n-select v-model:value="node.input_grouping"
+                      :options="getTableKeys(node.input_table, false).map(key => ({
+                        label: key,
+                        value: key,
+                    }))"
+                      multiple
+                      placeholder="选择目标分组字段" />
         </n-form-item>
 
         <!-- Use Mapping -->
@@ -468,7 +502,7 @@
 </template>
 
 <script setup lang="ts">
-import { NForm, NSpace, NFormItem, NSelect, NInput, NDynamicInput, NInputGroup, NInputGroupLabel, NDynamicTags, NCheckbox, NSwitch, NButton, NGrid, NGi, NText, NTooltip, NIcon } from 'naive-ui'
+import { NForm, NSpace, NFormItem, NSelect, NInput, NDynamicInput, NInputGroup, NInputGroupLabel, NDynamicTags, NCheckbox, NSwitch, NButton, NGrid, NGi, NTooltip, NIcon } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useFlowStore } from '@/store/flow'
 import DataInput from '@/components/shared/DataInput.vue';
@@ -517,6 +551,9 @@ interface ComparerNodeConfig /* extends BaseNodeConfig */ {
         input_field: string
     }
     use_mapping: boolean
+    use_grouping: boolean
+    target_grouping: string[]
+    input_grouping: string[]
     mapping_method: 'subtract' | 'remove' | 'remove_all' | ''
     linked_fields: string[]
     use_classifier: boolean
