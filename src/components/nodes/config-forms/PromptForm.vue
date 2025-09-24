@@ -9,7 +9,7 @@
 
         <n-form-item label="模型">
             <n-select v-model:value="node.model"
-                      :options="[{ label: 'gpt-4o', value: 'gpt-4o' }, { label: 'gpt-4.1', value: 'gpt-4.1' }]"
+                      :options="[{ label: 'gpt-4o', value: 'gpt-4o' }, { label: 'gpt-4.1', value: 'gpt-4.1' }, { label: 'gpt-5-mini', value: 'gpt-5-mini' }]"
                       placeholder="请选择模型" />
         </n-form-item>
 
